@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: mahjong-room
+    runtime: node
+    plan: free
+    repo: https://github.com/anps0210/mahjong
+    branch: main
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "24"
