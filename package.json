@@ -1,0 +1,8 @@
+{
+  "name": "mahjong-room",
+  "version": "1.0.0",
+  "private": true,
+  "description": "실시간 4인 마작 방 만들기/참가 MVP",
+  "scripts": {"start": "node server.js"},
+  "dependencies": {"express": "^4.21.2", "socket.io": "^4.8.1"}
+}
