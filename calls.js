@@ -27,7 +27,7 @@ function openWindow(room, from, tile) {
   if(!room.wall.length) return null;
   const offers={};
   room.players.forEach((p,seat)=>{
-    if(seat===from) return;
+    if(seat===from || p.riichi) return;
     const choices=optionsFor(p.hand,tile,seat,from,(room.kanCount||0)<4 && room.deadWall.length>0);
     if(choices.length) offers[seat]=choices;
   });
