@@ -34,6 +34,8 @@ function controls() {
   $("start").disabled = !ready || pending || !roomState || roomState.started ||
     !roomState.players[mySeat]?.host || roomState.players.length !== 4 ||
     roomState.players.some(p => !p.connected);
+  $("fillBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || roomState.players.length >= 4;
+  $("removeBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || !roomState.players.some(p => p.bot);
   $("hand").querySelectorAll("button").forEach(b => {
     b.disabled = !ready || pending || !roomState?.started || roomState.paused || currentTurn !== mySeat;
   });
@@ -116,6 +118,9 @@ $("copy").onclick = async () => {
   }
 };
 
+$("fillBots").onclick = () => request("room:bots", {fill:true}, res => err("lobbyError", res?.error));
+$("removeBots").onclick = () => request("room:bots", {fill:false}, res => err("lobbyError", res?.error));
+
 $("start").onclick = () => {
   request("game:start", undefined, res =>
     err("lobbyError", res?.error || "")
@@ -132,8 +137,8 @@ socket.on("room:update", room => {
 
   $("players").innerHTML = room.players.map((p, i) =>
     `<div class="player">
-      <strong>${escapeHtml(p.name)} ${p.host ? "👑" : ""}</strong>
-      <small>${p.connected ? "접속 중" : "연결 끊김"}</small>
+      <strong>${escapeHtml(p.name)} ${p.bot ? "🤖" : p.host ? "👑" : ""}</strong>
+      <small>${p.bot ? "연습봇" : p.connected ? "접속 중" : "연결 끊김"}</small>
     </div>`
   ).join("");
 
@@ -225,7 +230,7 @@ function renderTurn() {
   $("seats").innerHTML = [0,1,2,3].map(offset => {
     const i=(Math.max(0,mySeat)+offset)%4;
     const p=roomState?.players[i];
-    return `<div class="seat ${positions[offset]} ${i===currentTurn?'active':''} ${p && !p.connected?'offline':''}"><span class="wind-badge">${winds[i]}</span><div><strong>${escapeHtml(p?.name || `플레이어 ${i+1}`)}${i===mySeat?' · 나':''}</strong><small>${p && !p.connected?'연결 끊김':i===currentTurn?'● 현재 차례':'대기 중'}</small></div></div>`;
+    return `<div class="seat ${positions[offset]} ${i===currentTurn?'active':''} ${p && !p.connected?'offline':''}"><span class="wind-badge">${winds[i]}</span><div><strong>${escapeHtml(p?.name || `플레이어 ${i+1}`)}${p?.bot?' · 봇':i===mySeat?' · 나':''}</strong><small>${p && !p.connected?'연결 끊김':i===currentTurn?'● 현재 차례':'대기 중'}</small></div></div>`;
   }).join("");
 }
 
