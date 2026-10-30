@@ -1,0 +1,51 @@
+
+*{box-sizing:border-box}
+body{margin:0;background:#101b19;color:#f3f0e5;font-family:system-ui,sans-serif}
+.shell{max-width:820px;margin:auto;padding:28px 18px;min-height:100vh}
+header{text-align:center;margin:16px 0 28px}
+.brand{font-size:38px;font-weight:900;letter-spacing:3px;color:#d9c58d}
+.brand span{color:#f4f0e4}
+.sub{font-size:10px;letter-spacing:4px;color:#8da39a;margin-top:4px}
+.panel{background:#1b2b27;border:1px solid #344b42;border-radius:18px;padding:24px;box-shadow:0 14px 40px #0004}
+h1,h2,h3{margin:0 0 12px}
+h1{text-align:center;font-size:25px}
+.muted{color:#9eb0a6;font-size:13px}
+label{display:block;margin:22px 0 14px;color:#b8c7bf;font-size:13px}
+input{width:100%;padding:13px;border-radius:10px;border:1px solid #456057;background:#101b19;color:white;font-size:16px;margin-top:7px;outline:none}
+button{border:1px solid #567064;background:#263c34;color:#f6f2e6;padding:12px 16px;border-radius:10px;font-weight:700;cursor:pointer}
+button:hover{filter:brightness(1.15)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.primary{width:100%;background:#b99c58;color:#17221d;border:0;font-size:16px;margin:8px 0}
+.joinrow{display:flex;gap:8px;align-items:end}
+.joinrow input{flex:1}
+.error{color:#ff9b8e;min-height:20px;font-size:13px}
+.hidden{display:none!important}
+.roomhead,.gamehead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.code{font-size:32px;font-weight:900;letter-spacing:7px;color:#e5cf91}
+.players{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.player{padding:14px;background:#243831;border-radius:10px;border:1px solid #3a5549}
+.player strong{display:block}
+.player small{color:#9eb0a6}
+.seats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}
+.seat{padding:10px 5px;text-align:center;background:#243831;border-radius:9px;font-size:12px;border:1px solid #3a5549}
+.seat.active{border-color:#e0c477;color:#f3d98e}
+.tablecenter{background:#12211c;border:1px solid #395247;border-radius:12px;padding:18px;min-height:145px;text-align:center}
+.tablelabel{font-size:10px;letter-spacing:3px;color:#849b8f}
+.discards{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:12px}
+.tile{background:#f4f0e3;color:#202923;border-radius:5px;border:1px solid #c9c4b5;min-width:31px;height:43px;padding:5px 3px;font-size:16px;font-weight:800;box-shadow:0 2px 0 #aaa;display:inline-flex;align-items:center;justify-content:center}
+.hand{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:12px}
+.hand button{padding:0;background:transparent;border:0}
+.hand button .tile{cursor:pointer}
+.hand button:hover{transform:translateY(-7px)}
+h3{margin-top:20px}
+h3 small{font-size:11px;color:#9eb0a6;font-weight:400}
+.gamehead{margin-bottom:12px}
+#wall{margin-left:12px}
+footer{text-align:center;color:#6f887d;font-size:11px;margin:25px 0}
+@media(max-width:520px){
+.shell{padding:16px 10px}
+.panel{padding:17px}
+.code{font-size:25px}
+.tile{min-width:27px;height:39px;font-size:14px}
+.seats{grid-template-columns:repeat(2,1fr)}
+}
