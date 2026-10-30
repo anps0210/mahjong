@@ -65,7 +65,7 @@ test("actual page restores a refreshed player, disables offline actions and resu
   assert.equal(element(refreshed, "hand").textContent, hand);
   assert.equal(element(refreshed, "turnText").textContent, "내 차례");
   element(refreshed, "hand").querySelector("button").click();
-  await until(() => element(refreshed, "discards").children.length === 1);
+  await until(() => element(refreshed, "discards").querySelectorAll(".tile").length === 1);
   assert.equal(element(refreshed, "hand").querySelectorAll("button").length, 13);
 
   // Reconnect the same page: its connect handler must restore the room itself.
@@ -77,9 +77,9 @@ test("actual page restores a refreshed player, disables offline actions and resu
   guest.window.eval("socket.connect()");
   await until(() => !element(guest, "hand").querySelector("button").disabled);
   assert.equal(element(guest, "hand").textContent, guestHand);
-  assert.equal(element(guest, "discards").children.length, 1);
+  assert.equal(element(guest, "discards").querySelectorAll(".tile").length, 1);
   element(guest, "hand").querySelector("button").click();
-  await until(() => element(refreshed, "discards").children.length === 2);
+  await until(() => element(refreshed, "discards").querySelectorAll(".tile").length === 2);
 });
 
 test("expired browser session returns to home with an actionable message", async t => {
