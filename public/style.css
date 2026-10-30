@@ -49,3 +49,47 @@ footer{text-align:center;color:#6f887d;font-size:11px;margin:25px 0}
 .tile{min-width:27px;height:39px;font-size:14px}
 .seats{grid-template-columns:repeat(2,1fr)}
 }
+/* Table view: each player sees their own seat at the bottom. */
+body{background:radial-gradient(ellipse at top,#203a3c,#0b141c 70%)}
+.in-game .shell{max-width:1240px;padding:12px 24px}
+.in-game header{display:none}
+.in-game footer{margin:12px}
+#connectionStatus{font-size:12px;color:#adc6be;text-align:center}
+#game.panel{padding:0;border:0;background:none;box-shadow:none}
+.gamehead{padding:8px 4px 14px;align-items:center}
+.gamehead>div{display:flex;gap:14px;align-items:center}
+.eyebrow{font-size:10px;letter-spacing:3px;color:#93afa9}
+#gameCode{font-size:15px;letter-spacing:3px;color:#e4d2a2}
+.turn{font-size:13px;border:1px solid #526b70;background:#182a34;padding:9px 18px;border-radius:30px;color:#c4d5da}
+.turn.my-turn{color:#fff0b4;background:#705821;border-color:#e4c36d;box-shadow:0 0 22px #ebbd5320}
+.mahjong-table{position:relative;width:100%;max-width:1020px;aspect-ratio:1.55;margin:auto;border:12px solid #263b40;border-radius:32px;background:radial-gradient(ellipse at center,#286b65,#154942 75%,#103631);box-shadow:0 16px 50px #0006,inset 0 0 0 2px #7f9c7a66,inset 0 0 90px #051d21aa;overflow:hidden;isolation:isolate}
+.table-grain{position:absolute;inset:20px;border:1px solid #bedbba20;border-radius:18px;background-image:repeating-linear-gradient(0deg,transparent,transparent 3px,#ffffff02 3px,#ffffff02 4px);pointer-events:none}
+.seats,.discards{position:absolute;inset:0;margin:0;display:block}
+.seat{position:absolute;display:flex;align-items:center;gap:10px;width:155px;margin:0;text-align:left;border:1px solid #b9d6d333;border-radius:12px;padding:10px;background:linear-gradient(130deg,#172e38f5,#10232af5);box-shadow:0 5px 14px #0003;z-index:3}
+.seat strong{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px;max-width:100px;color:#e9f0ed}
+.seat small{display:block;font-size:10px;color:#9cb3b4;margin-top:3px}
+.seat.active{border-color:#eccb77;box-shadow:0 0 0 2px #edcb7520,0 0 25px #dfba4b28}
+.seat.active small{color:#eacf83}.seat.offline small{color:#ffab9b}
+.wind-badge{display:grid;place-items:center;width:30px;height:34px;border-radius:6px;background:#31484a;color:#ead7a5;font-size:20px;font-weight:800;flex-shrink:0}
+.seat.bottom{bottom:2%;left:50%;transform:translateX(-50%)}
+.seat.top{top:2%;left:50%;transform:translateX(-50%)}
+.seat.left{left:2%;top:45%;width:130px}.seat.right{right:2%;top:45%;width:130px}
+.tablecenter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:20%;aspect-ratio:1.12;min-height:0;padding:12px 5px;display:flex;flex-direction:column;justify-content:center;gap:8px;background:linear-gradient(145deg,#20373e,#10262d);border:2px solid #aab394;border-radius:12px;box-shadow:0 7px 0 #071c20,0 12px 24px #0005}
+.tablelabel{font-size:11px;letter-spacing:3px;color:#c3d0c3}.tablecenter strong{font-size:23px;color:#ead6a0;font-family:serif;letter-spacing:3px}
+#wall{margin:0;font-size:13px;color:#e4eae2}.center-caption{font-size:10px;letter-spacing:3px;color:#8ca7a5}
+.river{position:absolute;width:24%;display:grid;grid-template-columns:repeat(6,1fr);gap:3px;align-content:start;min-height:40px}
+.river.bottom{left:38%;top:69%}.river.top{left:38%;bottom:69%;transform:rotate(180deg)}
+.river.left{left:18%;top:50%;transform:translate(-30%,-50%) rotate(90deg)}
+.river.right{right:18%;top:50%;transform:translate(30%,-50%) rotate(-90deg)}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:100%;min-width:0;height:auto;aspect-ratio:.7;padding:3px 1px;background:linear-gradient(110deg,#fffef6,#e9e6d8);border:1px solid #bfc7b8;border-radius:5px;box-shadow:0 3px 0 #9dada0,1px 4px 3px #0006;color:#263d54;line-height:1;overflow:hidden}
+.tile b{font-family:serif;font-size:clamp(14px,3vw,35px);font-style:normal;line-height:1.05}.tile em{font-family:serif;font-style:normal;color:#b13631;font-size:clamp(14px,2.6vw,28px)}
+.tile svg{width:100%;height:74%}.tile small{font-size:9px;color:#536779;line-height:1.1;margin-top:2px}
+.tile.red b{color:#bc332e}.tile.green b{color:#207347}.tile.white b{width:60%;height:60%;border:3px solid #3d6892;border-radius:3px}
+.river .tile b{font-size:clamp(12px,2.1vw,24px)}.river .tile em{font-size:clamp(11px,1.8vw,21px)}.river .tile small{font-size:7px}
+.tile.latest{outline:2px solid #ffe391;box-shadow:0 0 16px #ffdc7766;z-index:1}
+.hand-dock{max-width:1020px;margin:16px auto 0;padding:14px 22px 22px;border:1px solid #496165;border-radius:16px;background:linear-gradient(180deg,#20333d,#12222d);box-shadow:0 12px 25px #0003}
+.hand-heading{display:flex;align-items:center;gap:16px;margin-bottom:14px;font-size:12px;color:#b2c8c8}.hand-heading strong{color:#e7d29b}.sort-control{display:flex;align-items:center;gap:5px;margin:0 0 0 auto;font-size:11px;white-space:nowrap}.sort-control input{width:14px;margin:0;accent-color:#d9bd75}
+.hand{display:flex;flex-wrap:nowrap;gap:4px;margin:0;align-items:flex-end;justify-content:center}.hand button{flex:1;max-width:58px;min-width:0;transition:transform .12s,filter .12s}.hand button.drawn{margin-left:14px}.hand button:disabled{opacity:1;cursor:default}.hand button:disabled .tile{cursor:default}.hand button:hover:disabled{transform:none;filter:none}.hand button:not(:disabled):hover,.hand button:focus-visible{transform:translateY(-10px);outline:2px solid #ffdf83;border-radius:5px}.hand button:not(:disabled) .tile{border-color:#d9c48e}.hand .tile{box-shadow:0 5px 0 #8b9f91,0 8px 6px #0007}
+#gameMessage{text-align:center;font-size:12px;min-height:18px;margin:12px auto}
+@media(max-width:700px){.in-game .shell{padding:8px}.mahjong-table{aspect-ratio:1;border-width:6px;border-radius:20px}.seat{width:125px;padding:6px;gap:6px}.seat.left,.seat.right{width:76px;top:42%;flex-direction:column;text-align:center}.seat strong{max-width:66px;font-size:10px}.seat small{font-size:9px}.wind-badge{width:25px;height:27px;font-size:17px}.tablecenter{width:23%;padding:5px;gap:5px}.tablecenter strong{font-size:16px;letter-spacing:1px}.tablelabel{font-size:8px;letter-spacing:1px}#wall{font-size:10px}.center-caption{font-size:8px;letter-spacing:0}.river{width:28%;gap:2px}.river.bottom{left:36%;top:65%}.river.top{left:36%;bottom:65%}.river.left{left:22%}.river.right{right:22%}.hand-dock{padding:12px 7px 16px;margin-top:10px}.hand{gap:2px}.hand button.drawn{margin-left:5px}.hand-heading{gap:7px;font-size:10px}.hand-heading span{font-size:10px}.tile small{font-size:7px}.eyebrow{display:none}.turn{font-size:11px;padding:7px 12px}.tile{border-radius:3px}.river .tile small{display:none}}
+@media(prefers-reduced-motion:reduce){.hand button{transition:none}}

@@ -69,6 +69,7 @@ function entered(res) {
 }
 
 const show = id => {
+  document.body.classList.toggle("in-game", id === "game");
   ["home", "lobby", "game"].forEach(x =>
     $(x).classList.toggle("hidden", x !== id)
   );
@@ -124,6 +125,7 @@ $("start").onclick = () => {
 socket.on("room:update", room => {
   if (room.code !== roomCode) return;
   roomState = room;
+  renderTurn();
 
   $("count").textContent =
     `${room.players.length}/4`;
@@ -177,43 +179,54 @@ socket.on("game:message", m => {
   $("gameMessage").textContent = m;
 });
 
+const winds = ["동", "남", "서", "북"];
+const positions = ["bottom", "right", "top", "left"];
+const tileOrder = tile => {
+  const suit = ["만", "통", "삭"].indexOf(tile.slice(-1));
+  return suit < 0 ? 30 + ["동", "남", "서", "북", "백", "발", "중"].indexOf(tile) : suit * 10 + Number(tile[0]);
+};
+function tileFace(tile, extra = "") {
+  const suit = tile.slice(-1);
+  const kind = { "만": "man", "통": "pin", "삭": "sou", "중": "red", "발": "green", "백": "white" }[suit] || "honor";
+  const number = Number(tile[0]);
+  let face;
+  if (number && (suit === "통" || suit === "삭")) {
+    const points = number === 1 ? [[30,30]] : Array.from({length:number}, (_,i) => [18 + (i%3)*12, 15 + Math.floor(i/3)*15]);
+    face = `<svg viewBox="0 0 60 60" aria-hidden="true">${points.map(([x,y],i) => suit === "통" ? `<circle cx="${x}" cy="${y}" r="${number===1?16:5}" fill="none" stroke="${i%3===1?'#b83735':'#235e84'}" stroke-width="3"/><circle cx="${x}" cy="${y}" r="2" fill="#235e84"/>` : `<path d="M${x} ${y-5}v10m-3-7h6m-6 4h6" stroke="#23734f" stroke-width="3" stroke-linecap="round"/>`).join("")}</svg><small>${tile}</small>`;
+  } else if (number) face = `<b>${["","一","二","三","四","五","六","七","八","九"][number]}</b><em>萬</em>`;
+  else face = `<b>${{"동":"東","남":"南","서":"西","북":"北","백":"","발":"發","중":"中"}[tile]}</b><small>${tile}</small>`;
+  return `<span class="tile ${kind} ${extra}" aria-label="${tile}">${face}</span>`;
+}
 function renderHand() {
-  $("hand").innerHTML = myHand.map((tile, i) =>
-    `<button aria-label="${tile} 버리기" data-i="${i}">
-      <span class="tile">${tile}</span>
-    </button>`
-  ).join("");
-
+  const tiles = myHand.map((tile, i) => ({tile, i}));
+  const drawn = myHand.length === 14 ? tiles.pop() : null;
+  if ($("sortHand").checked) tiles.sort((a,b) => tileOrder(a.tile)-tileOrder(b.tile));
+  if (drawn) tiles.push(drawn);
+  $("hand").innerHTML = tiles.map(({tile,i}) => `<button aria-label="${tile} 버리기" data-i="${i}" class="${drawn?.i === i ? 'drawn' : ''}">${tileFace(tile)}</button>`).join("");
   $("hand").querySelectorAll("button").forEach(b => {
-    b.onclick = () => {
-      const tile = myHand[Number(b.dataset.i)];
-
-      request("game:discard", { tile }, res => {
-        if (res?.error)
-          $("gameMessage").textContent = res.error;
-      });
-    };
+    b.onclick = () => request("game:discard", { tile: myHand[Number(b.dataset.i)] }, res => {
+      if (res?.error) $("gameMessage").textContent = res.error;
+    });
   });
+  controls();
 }
-
+$("sortHand").onchange = renderHand;
 function renderDiscards() {
-  $("discards").innerHTML = lastDiscards.map(d =>
-    `<span class="tile" title="${["동", "남", "서", "북"][d.seat]}가">${d.tile}</span>`
-  ).join("");
+  $("discards").innerHTML = [0,1,2,3].map(offset => {
+    const seat = (Math.max(0,mySeat)+offset)%4;
+    const tiles = lastDiscards.map((d,i)=>({...d,index:i})).filter(d=>d.seat===seat);
+    return `<div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,d.index===lastDiscards.length-1?'latest':'')).join("")}</div>`;
+  }).join("");
 }
-
 function renderTurn() {
-  $("turnText").textContent =
-    currentTurn === mySeat
-      ? "내 차례"
-      : `플레이어 ${currentTurn + 1} 차례`;
-
-  $("seats").innerHTML = [0, 1, 2, 3].map(i =>
-    `<div class="seat ${i === currentTurn ? "active" : ""}">
-      ${["동", "남", "서", "북"][i]}가 ·
-      ${i === currentTurn ? "진행 중" : "대기"}
-    </div>`
-  ).join("");
+  $("turnText").textContent = roomState?.paused ? "복귀 대기" : currentTurn === mySeat ? "내 차례" : `플레이어 ${currentTurn + 1} 차례`;
+  $("turnText").classList.toggle("my-turn",currentTurn===mySeat && !roomState?.paused);
+  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : currentTurn===mySeat ? "버릴 패를 선택하세요" : "다른 플레이어의 차례입니다";
+  $("seats").innerHTML = [0,1,2,3].map(offset => {
+    const i=(Math.max(0,mySeat)+offset)%4;
+    const p=roomState?.players[i];
+    return `<div class="seat ${positions[offset]} ${i===currentTurn?'active':''} ${p && !p.connected?'offline':''}"><span class="wind-badge">${winds[i]}</span><div><strong>${escapeHtml(p?.name || `플레이어 ${i+1}`)}${i===mySeat?' · 나':''}</strong><small>${p && !p.connected?'연결 끊김':i===currentTurn?'● 현재 차례':'대기 중'}</small></div></div>`;
+  }).join("");
 }
 
 function escapeHtml(s) {
