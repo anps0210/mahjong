@@ -38,7 +38,7 @@
 <div id="players" class="players"></div>
 <p class="muted">4명이 모이면 방장이 게임을 시작할 수 있어.</p>
 <div class="bot-controls"><button id="fillBots">빈자리에 연습봇 추가</button><button id="removeBots">봇 빼기</button></div>
-<p class="muted">연습봇은 손패 구성을 고려해 자동으로 패를 버립니다. 현재 화료·리치·부로 판정은 지원하지 않습니다.</p>
+<p class="muted">연습봇은 손패 구성을 고려해 자동으로 패를 버립니다. 현재 화료·리치 판정은 지원하지 않습니다.</p>
 <button id="start" class="primary">게임 시작</button>
 <p id="lobbyError" class="error"></p>
 </section>
@@ -51,6 +51,8 @@
 <div id="discards" class="discards"></div>
 <div class="tablecenter"><span class="tablelabel">雀 ROOM</span><strong>四人麻雀</strong><span id="wall"></span><span class="center-caption">동 · 남 · 서 · 북</span></div>
 </div>
+<div id="callPanel" class="call-panel hidden" role="region" aria-label="부로 선택"></div>
+<div id="melds" class="melds" aria-label="공개된 부로"></div>
 <div class="hand-dock"><div class="hand-heading"><strong>내 손패</strong><span id="handHint">내 차례에 패를 눌러 버리세요</span><label class="sort-control"><input id="sortHand" type="checkbox" checked> 자동 정렬</label></div><div id="hand" class="hand"></div></div>
 <p id="gameMessage" class="muted" role="status"></p>
 </section>

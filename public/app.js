@@ -9,6 +9,11 @@ let mySeat = -1;
 let currentTurn = 0;
 let lastDiscards = [];
 let roomState = null;
+let callState = null;
+let waitingCall = false;
+let bannedTiles = [];
+let drawnTile = null;
+let publicMelds = [];
 let ready = false;
 let pending = false;
 let replaced = false;
@@ -36,8 +41,9 @@ function controls() {
     roomState.players.some(p => !p.connected);
   $("fillBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || roomState.players.length >= 4;
   $("removeBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || !roomState.players.some(p => p.bot);
+  $("callPanel").querySelectorAll("button").forEach(b => { b.disabled = !ready || pending || roomState?.paused || callState?.answered; });
   $("hand").querySelectorAll("button").forEach(b => {
-    b.disabled = !ready || pending || !roomState?.started || roomState.paused || currentTurn !== mySeat;
+    b.disabled = !ready || pending || !roomState?.started || roomState.paused || waitingCall || currentTurn !== mySeat || bannedTiles.includes(myHand[Number(b.dataset.i)]);
   });
 }
 
@@ -159,6 +165,11 @@ socket.on("room:update", room => {
 
 socket.on("game:private", s => {
   myHand = s.hand;
+  callState = s.call;
+  waitingCall = s.waiting;
+  bannedTiles = s.banned || [];
+  drawnTile = s.drawn;
+  publicMelds = s.melds || [];
   mySeat = s.mySeat;
   currentTurn = s.turn;
   lastDiscards = s.discards || [];
@@ -166,6 +177,8 @@ socket.on("game:private", s => {
   $("wall").textContent =
     `남은 패 ${s.wallCount}개`;
 
+  renderCalls();
+  renderMelds();
   renderHand();
   renderTurn();
   renderDiscards();
@@ -204,7 +217,7 @@ function tileFace(tile, extra = "") {
 }
 function renderHand() {
   const tiles = myHand.map((tile, i) => ({tile, i}));
-  const drawn = myHand.length === 14 ? tiles.pop() : null;
+  const drawn = drawnTile ? tiles.pop() : null;
   if ($("sortHand").checked) tiles.sort((a,b) => tileOrder(a.tile)-tileOrder(b.tile));
   if (drawn) tiles.push(drawn);
   $("hand").innerHTML = tiles.map(({tile,i}) => `<button aria-label="${tile} 버리기" data-i="${i}" class="${drawn?.i === i ? 'drawn' : ''}">${tileFace(tile)}</button>`).join("");
@@ -220,13 +233,33 @@ function renderDiscards() {
   $("discards").innerHTML = [0,1,2,3].map(offset => {
     const seat = (Math.max(0,mySeat)+offset)%4;
     const tiles = lastDiscards.map((d,i)=>({...d,index:i})).filter(d=>d.seat===seat);
-    return `<div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,d.index===lastDiscards.length-1?'latest':'')).join("")}</div>`;
+    return `<div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div>`;
   }).join("");
 }
+function renderCalls() {
+  const panel = $("callPanel");
+  panel.classList.toggle("hidden", !waitingCall);
+  if (!waitingCall) { panel.innerHTML = ""; return; }
+  if (!callState?.options.length || callState.answered) {
+    panel.innerHTML = '<strong>다른 플레이어의 부로 선택을 기다리고 있어요…</strong>';
+    return;
+  }
+  panel.innerHTML = `<div class="call-target">${tileFace(callState.tile)}<strong>이 패를 울 수 있어요</strong></div><div class="call-actions">${callState.options.map(o=>`<button data-choice="${o.id}"><b>${{chi:'치',pon:'퐁',kan:'깡'}[o.type]}</b><span class="call-preview">${o.consume.map(t=>tileFace(t)).join('')}</span></button>`).join('')}<button data-choice="skip" class="skip-call">스킵</button></div>`;
+  panel.querySelectorAll('button').forEach(b=>b.onclick=()=>request('game:call',{id:callState.id,choice:b.dataset.choice==='skip'?null:b.dataset.choice},res=>{if(res?.error) $("gameMessage").textContent=res.error;}));
+}
+function renderMelds() {
+  $("melds").innerHTML = [0,1,2,3].map(offset=>{
+    const seat=(Math.max(0,mySeat)+offset)%4;
+    const melds=publicMelds[seat] || [];
+    if(!melds.length) return '';
+    return `<div class="meld-row"><strong>${winds[seat]}가${seat===mySeat?' · 나':''}</strong>${melds.map(m=>`<div class="meld-group" aria-label="${winds[m.from]}가에서 ${m.type}"><small>${{chi:'치',pon:'퐁',kan:'깡'}[m.type]} · ${winds[m.from]}가</small><div>${m.tiles.map(t=>tileFace(t)).join('')}</div></div>`).join('')}</div>`;
+  }).join('');
+}
+
 function renderTurn() {
-  $("turnText").textContent = roomState?.paused ? "복귀 대기" : currentTurn === mySeat ? "내 차례" : `플레이어 ${currentTurn + 1} 차례`;
-  $("turnText").classList.toggle("my-turn",currentTurn===mySeat && !roomState?.paused);
-  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : currentTurn===mySeat ? "버릴 패를 선택하세요" : "다른 플레이어의 차례입니다";
+  $("turnText").textContent = roomState?.paused ? "복귀 대기" : waitingCall ? "부로 선택 중" : currentTurn === mySeat ? "내 차례" : `플레이어 ${currentTurn + 1} 차례`;
+  $("turnText").classList.toggle("my-turn",currentTurn===mySeat && !roomState?.paused && !waitingCall);
+  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "치·퐁·깡 또는 스킵을 선택하세요" : currentTurn===mySeat ? "버릴 패를 선택하세요" : "다른 플레이어의 차례입니다";
   $("seats").innerHTML = [0,1,2,3].map(offset => {
     const i=(Math.max(0,mySeat)+offset)%4;
     const p=roomState?.players[i];
