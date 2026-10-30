@@ -5,6 +5,7 @@ const { randomUUID } = require("crypto");
 const path = require("path");
 const { chooseDiscard } = require("./bot");
 const { openWindow, winner, applyCall } = require("./calls");
+const { riichiDiscards, declareRiichi, handShanten } = require("./riichi");
 
 function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, dealWall = null } = {}) {
   const app = express();
@@ -21,6 +22,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       socketId: socket.id,
       name: String(name || "플레이어").slice(0, 12),
       connected: true,
+      score: 25000,
       hand: []
     };
   }
@@ -94,6 +96,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       started: room.started,
       paused: room.started && room.players.some(p => !p.connected),
       message: room.message || "",
+      riichiPot: room.riichiPot || 0,
       waiting: Boolean(room.pendingCall),
       turn: room.turn,
       players: room.players.map((p, seat) => ({
@@ -101,6 +104,8 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
         seat,
         wind: WINDS[seat],
         host: p.id === room.hostId,
+        score: p.score ?? 25000,
+        riichi: Boolean(p.riichi),
         melds: p.melds || [],
         bot: Boolean(p.bot),
         connected: p.connected
@@ -121,6 +126,9 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
 
     io.to(socketId).emit("game:private", {
       hand: player.hand,
+      riichi: Boolean(player.riichi),
+      riichiDiscards: riichiDiscards(room,seat),
+      shanten: handShanten(player),
       drawn: player.drawn || null,
       waiting: Boolean(room.pendingCall),
       banned: player.banned || [],
@@ -159,6 +167,8 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       player.melds = [];
       player.banned = [];
       player.drawn = null;
+      player.riichi = false;
+      player.score ??= 25000;
     });
 
     // 동가는 처음부터 14장. 방장 승계는 좌석 순서를 바꾸지 않는다.
@@ -171,11 +181,11 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     scheduleBot(room);
   }
 
-  function discard(room, seat, tile) {
+  function discard(room, seat, tile, riichiDeclaration = false) {
     const player = room.players[seat];
-    const tileIndex = player.hand.indexOf(tile);
+    const tileIndex = player.riichi && !riichiDeclaration ? player.hand.length - 1 : player.hand.indexOf(tile);
     player.hand.splice(tileIndex, 1);
-    room.discards.push({ tile, seat });
+    room.discards.push({ tile, seat, riichi: riichiDeclaration });
 
     player.drawn = null;
     player.banned = [];
@@ -229,7 +239,10 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       if (rooms.get(room.code) !== room || !room.started || room.pendingCall || room.players.some(p => !p.connected)) return;
       const player = room.players[room.turn];
       if (!player?.bot || player.hand.length !== 14 - 3 * (player.melds?.length || 0)) return;
-      discard(room, room.turn, chooseDiscard(player.hand, room.discards));
+      const candidates = riichiDiscards(room,room.turn);
+      const tile = player.riichi ? player.drawn : candidates[0] || chooseDiscard(player.hand, room.discards);
+      const declared = !player.riichi && candidates.length > 0 && declareRiichi(room,room.turn,tile);
+      discard(room, room.turn, tile, Boolean(declared));
     }, botDelayMs);
     room.botTimer.unref();
   }
@@ -291,7 +304,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       if (!room || !room.players.some(p => p.id === room.hostId && p.socketId === socket.id)) return callback?.({ ok:false, error:"방장만 봇을 설정할 수 있어." });
       if (room.started) return callback?.({ ok:false, error:"대기실에서만 봇을 설정할 수 있어." });
       if (fill === true) {
-        while (room.players.length < 4) room.players.push({ id:randomUUID(), bot:true, name:`연습봇 ${room.players.length}`, connected:true, hand:[] });
+        while (room.players.length < 4) room.players.push({ id:randomUUID(), bot:true, name:`연습봇 ${room.players.length}`, connected:true, score:25000, hand:[] });
       } else if (fill === false) {
         room.players = room.players.filter(p => !p.bot);
       } else return callback?.({ok:false,error:"봇 설정을 확인해 줘."});
@@ -327,7 +340,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       callback?.({ok:true});
     });
 
-    socket.on("game:discard", ({ tile } = {}, callback) => {
+    socket.on("game:discard", ({ tile, riichi = false } = {}, callback) => {
       const room = rooms.get(socket.data.room);
       if (!room || !room.started) {
         return callback?.({ ok: false, error: "진행 중인 게임이 없어." });
@@ -350,7 +363,10 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
         return callback?.({ ok: false, error: "해당 패를 손패에서 찾을 수 없어." });
       }
 
-      discard(room, seat, tile);
+      if (player.riichi && tile !== player.drawn) return callback?.({ok:false,error:"리치 후에는 방금 뽑은 패만 버릴 수 있어요."});
+      if (riichi !== false && riichi !== true) return callback?.({ok:false,error:"리치 요청을 확인해 주세요."});
+      if (riichi && !declareRiichi(room,seat,tile)) return callback?.({ok:false,error:"멘젠 텐파이·1,000점 이상·남은 패 4장 이상일 때 리치할 수 있어요."});
+      discard(room, seat, tile, riichi);
       callback?.({ ok: true });
     });
 

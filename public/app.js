@@ -14,6 +14,10 @@ let waitingCall = false;
 let bannedTiles = [];
 let drawnTile = null;
 let publicMelds = [];
+let ownRiichi = false;
+let riichiChoices = [];
+let choosingRiichi = false;
+let shantenValue = null;
 let ready = false;
 let pending = false;
 let replaced = false;
@@ -42,8 +46,10 @@ function controls() {
   $("fillBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || roomState.players.length >= 4;
   $("removeBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || !roomState.players.some(p => p.bot);
   $("callPanel").querySelectorAll("button").forEach(b => { b.disabled = !ready || pending || roomState?.paused || callState?.answered; });
+  $("riichiButton").disabled = !ready || pending || !roomState?.started || roomState.paused || waitingCall || currentTurn !== mySeat || ownRiichi || !riichiChoices.length;
   $("hand").querySelectorAll("button").forEach(b => {
-    b.disabled = !ready || pending || !roomState?.started || roomState.paused || waitingCall || currentTurn !== mySeat || bannedTiles.includes(myHand[Number(b.dataset.i)]);
+    b.classList.toggle("riichi-candidate", choosingRiichi && riichiChoices.includes(myHand[Number(b.dataset.i)]));
+    b.disabled = !ready || pending || !roomState?.started || roomState.paused || waitingCall || currentTurn !== mySeat || bannedTiles.includes(myHand[Number(b.dataset.i)]) || (ownRiichi && Number(b.dataset.i) !== myHand.length-1) || (choosingRiichi && !riichiChoices.includes(myHand[Number(b.dataset.i)]));
   });
 }
 
@@ -136,6 +142,7 @@ $("start").onclick = () => {
 socket.on("room:update", room => {
   if (room.code !== roomCode) return;
   roomState = room;
+  $("riichiPot").textContent = `供託 · ${(room.riichiPot || 0) * 1000}점`;
   renderTurn();
 
   $("count").textContent =
@@ -165,6 +172,12 @@ socket.on("room:update", room => {
 
 socket.on("game:private", s => {
   myHand = s.hand;
+  ownRiichi = s.riichi;
+  riichiChoices = s.riichiDiscards || [];
+  shantenValue = s.shanten;
+  choosingRiichi = false;
+  renderShanten();
+  $("riichiButton").textContent = ownRiichi ? "리치 선언 완료" : "리치 · 1,000점";
   callState = s.call;
   waitingCall = s.waiting;
   bannedTiles = s.banned || [];
@@ -222,7 +235,7 @@ function renderHand() {
   if (drawn) tiles.push(drawn);
   $("hand").innerHTML = tiles.map(({tile,i}) => `<button aria-label="${tile} 버리기" data-i="${i}" class="${drawn?.i === i ? 'drawn' : ''}">${tileFace(tile)}</button>`).join("");
   $("hand").querySelectorAll("button").forEach(b => {
-    b.onclick = () => request("game:discard", { tile: myHand[Number(b.dataset.i)] }, res => {
+    b.onclick = () => request("game:discard", { tile: myHand[Number(b.dataset.i)], riichi: choosingRiichi }, res => {
       if (res?.error) $("gameMessage").textContent = res.error;
     });
   });
@@ -233,7 +246,7 @@ function renderDiscards() {
   $("discards").innerHTML = [0,1,2,3].map(offset => {
     const seat = (Math.max(0,mySeat)+offset)%4;
     const tiles = lastDiscards.map((d,i)=>({...d,index:i})).filter(d=>d.seat===seat);
-    return `<div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div>`;
+    return `<div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${d.riichi ? 'riichi-discard' : ''} ${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div>`;
   }).join("");
 }
 function renderCalls() {
@@ -256,14 +269,29 @@ function renderMelds() {
   }).join('');
 }
 
+function renderShanten() {
+  $("shantenValue").classList.toggle("hidden", !$("showShanten").checked);
+  $("shantenValue").textContent = shantenValue == null ? "" : shantenValue === -1 ? "완성형 (화료 판정 전)" : shantenValue === 0 ? "텐파이 · 0샹텐" : `${shantenValue}샹텐`;
+}
+try { $("showShanten").checked = localStorage.getItem("mahjong.showShanten") !== "false"; } catch {}
+$("showShanten").onchange = () => {
+  try { localStorage.setItem("mahjong.showShanten", String($("showShanten").checked)); } catch {}
+  renderShanten();
+};
+$("riichiButton").onclick = () => {
+  choosingRiichi = !choosingRiichi;
+  $("riichiButton").textContent = choosingRiichi ? "리치 선택 취소" : "리치 · 1,000점";
+  renderTurn();
+  controls();
+};
 function renderTurn() {
   $("turnText").textContent = roomState?.paused ? "복귀 대기" : waitingCall ? "부로 선택 중" : currentTurn === mySeat ? "내 차례" : `플레이어 ${currentTurn + 1} 차례`;
   $("turnText").classList.toggle("my-turn",currentTurn===mySeat && !roomState?.paused && !waitingCall);
-  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "치·퐁·깡 또는 스킵을 선택하세요" : currentTurn===mySeat ? "버릴 패를 선택하세요" : "다른 플레이어의 차례입니다";
+  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "치·퐁·깡 또는 스킵을 선택하세요" : choosingRiichi ? "강조된 패를 버리면 리치가 확정됩니다" : ownRiichi && currentTurn===mySeat ? "리치 중 · 뽑은 패를 버리세요" : currentTurn===mySeat ? "버릴 패를 선택하세요" : "다른 플레이어의 차례입니다";
   $("seats").innerHTML = [0,1,2,3].map(offset => {
     const i=(Math.max(0,mySeat)+offset)%4;
     const p=roomState?.players[i];
-    return `<div class="seat ${positions[offset]} ${i===currentTurn?'active':''} ${p && !p.connected?'offline':''}"><span class="wind-badge">${winds[i]}</span><div><strong>${escapeHtml(p?.name || `플레이어 ${i+1}`)}${p?.bot?' · 봇':i===mySeat?' · 나':''}</strong><small>${p && !p.connected?'연결 끊김':i===currentTurn?'● 현재 차례':'대기 중'}</small></div></div>`;
+    return `<div class="seat ${positions[offset]} ${i===currentTurn?'active':''} ${p && !p.connected?'offline':''}"><span class="wind-badge">${winds[i]}</span><div><strong>${escapeHtml(p?.name || `플레이어 ${i+1}`)}${p?.bot?' · 봇':i===mySeat?' · 나':''}</strong><small>${p?.riichi?'리치 · ':''}${p && !p.connected?'연결 끊김':i===currentTurn?'● 현재 차례':'대기 중'}</small><small>${(p?.score ?? 25000).toLocaleString()}점</small></div></div>`;
   }).join("");
 }
 

@@ -5,7 +5,7 @@ function countsOf(hand) {
   return counts;
 }
 // Closed-hand distance to completion: standard hands, seven pairs and orphans.
-function shanten(counts) {
+function shanten(counts, openMelds = 0) {
   let best = 8;
   function visit(start, melds, pairs, partials) {
     while (start < 34 && !counts[start]) start++;
@@ -36,7 +36,8 @@ function shanten(counts) {
     }
     counts[start]--; visit(start,melds,pairs,partials); counts[start]++;
   }
-  visit(0,0,0,0);
+  visit(0,openMelds,0,0);
+  if (openMelds) return best;
   const unique = counts.filter(Boolean).length;
   const pairs = counts.filter(n=>n>=2).length;
   const orphans = [0,8,9,17,18,26,27,28,29,30,31,32,33];
@@ -69,4 +70,4 @@ function chooseDiscard(hand, discards = []) {
   }
   return TILES[best.i];
 }
-module.exports={chooseDiscard,shanten,countsOf};
+module.exports={chooseDiscard,shanten,countsOf,TILES};
