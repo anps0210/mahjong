@@ -3,8 +3,9 @@ const http = require("http");
 const { Server } = require("socket.io");
 const { randomUUID } = require("crypto");
 const path = require("path");
+const { chooseDiscard } = require("./bot");
 
-function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
+function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900 } = {}) {
   const app = express();
   const server = http.createServer(app);
   const io = new Server(server);
@@ -24,8 +25,8 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
   }
 
   function assignHost(room) {
-    if (!room.players.some(p => p.id === room.hostId && p.connected)) {
-      room.hostId = room.players.find(p => p.connected)?.id || room.hostId;
+    if (!room.players.some(p => p.id === room.hostId && p.connected && !p.bot)) {
+      room.hostId = room.players.find(p => p.connected && !p.bot)?.id || room.hostId;
     }
   }
 
@@ -41,6 +42,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
     // Send identity and a complete snapshot before the public room update.
     sendAllPrivateStates(room);
     sendRoom(room);
+    scheduleBot(room);
   }
 
   function alreadyJoined(socket, callback) {
@@ -96,6 +98,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
         seat,
         wind: WINDS[seat],
         host: p.id === room.hostId,
+        bot: Boolean(p.bot),
         connected: p.connected
       })),
       wallCount: room.wall.length
@@ -125,7 +128,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
 
   function sendAllPrivateStates(room) {
     room.players.forEach(player => {
-      if (player.connected) privateState(room, player.socketId);
+      if (player.connected && !player.bot) privateState(room, player.socketId);
     });
   }
 
@@ -151,6 +154,47 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
     sendAllPrivateStates(room);
     sendRoom(room);
     io.to(room.code).emit("game:message", "동가부터 시작합니다. 내 차례에 패를 선택해 버리세요.");
+    scheduleBot(room);
+  }
+
+  function discard(room, seat, tile) {
+    const player = room.players[seat];
+    const tileIndex = player.hand.indexOf(tile);
+    player.hand.splice(tileIndex, 1);
+    room.discards.push({ tile, seat });
+
+    const nextSeat = (seat + 1) % 4;
+
+    if (room.wall.length === 0) {
+      room.started = false;
+      room.message = "패산이 모두 소진됐어. 이번 국은 유국 처리야. 방장이 다음 게임을 시작할 수 있어.";
+      io.to(room.code).emit("game:message", "패산이 모두 소진됐어. 이번 국은 유국 처리야.");
+    } else {
+      room.turn = nextSeat;
+      room.players[nextSeat].hand.push(room.wall.pop());
+    }
+
+    sendAllPrivateStates(room);
+    io.to(room.code).emit("game:discarded", {
+      tile,
+      seat,
+      turn: room.turn,
+      discards: room.discards
+    });
+    sendRoom(room);
+    scheduleBot(room);
+  }
+
+  function scheduleBot(room) {
+    clearTimeout(room.botTimer);
+    if (!room.started || room.players.some(p => !p.connected) || !room.players[room.turn]?.bot) return;
+    room.botTimer = setTimeout(() => {
+      if (rooms.get(room.code) !== room || !room.started || room.players.some(p => !p.connected)) return;
+      const player = room.players[room.turn];
+      if (!player?.bot || player.hand.length !== 14) return;
+      discard(room, room.turn, chooseDiscard(player.hand, room.discards));
+    }, botDelayMs);
+    room.botTimer.unref();
   }
 
   io.on("connection", socket => {
@@ -205,6 +249,20 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
       attach(socket, room, player, callback);
     });
 
+    socket.on("room:bots", ({ fill } = {}, callback) => {
+      const room = rooms.get(socket.data.room);
+      if (!room || !room.players.some(p => p.id === room.hostId && p.socketId === socket.id)) return callback?.({ ok:false, error:"방장만 봇을 설정할 수 있어." });
+      if (room.started) return callback?.({ ok:false, error:"대기실에서만 봇을 설정할 수 있어." });
+      if (fill === true) {
+        while (room.players.length < 4) room.players.push({ id:randomUUID(), bot:true, name:`연습봇 ${room.players.length}`, connected:true, hand:[] });
+      } else if (fill === false) {
+        room.players = room.players.filter(p => !p.bot);
+      } else return callback?.({ok:false,error:"봇 설정을 확인해 줘."});
+      sendAllPrivateStates(room);
+      sendRoom(room);
+      callback?.({ok:true});
+    });
+
     socket.on("game:start", callback => {
       const room = rooms.get(socket.data.room);
 
@@ -238,28 +296,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
         return callback?.({ ok: false, error: "해당 패를 손패에서 찾을 수 없어." });
       }
 
-      player.hand.splice(tileIndex, 1);
-      room.discards.push({ tile, seat });
-
-      const nextSeat = (seat + 1) % 4;
-
-      if (room.wall.length === 0) {
-        room.started = false;
-        room.message = "패산이 모두 소진됐어. 이번 국은 유국 처리야. 방장이 다음 게임을 시작할 수 있어.";
-        io.to(room.code).emit("game:message", "패산이 모두 소진됐어. 이번 국은 유국 처리야.");
-      } else {
-        room.turn = nextSeat;
-        room.players[nextSeat].hand.push(room.wall.pop());
-      }
-
-      sendAllPrivateStates(room);
-      io.to(room.code).emit("game:discarded", {
-        tile,
-        seat,
-        turn: room.turn,
-        discards: room.discards
-      });
-      sendRoom(room);
+      discard(room, seat, tile);
       callback?.({ ok: true });
     });
 
@@ -271,6 +308,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
       const player = room.players.find(p => p.socketId === socket.id);
       if (!player) return;
       player.connected = false;
+      clearTimeout(room.botTimer);
       assignHost(room);
 
       // Reserve lobby seats briefly; never remove a seat during a live game.
@@ -284,11 +322,12 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
       player.expiryTimer.unref();
 
       sendRoom(room);
-      if (room.players.every(p => !p.connected)) {
+      if (room.players.every(p => p.bot || !p.connected)) {
         clearTimeout(room.cleanupTimer);
         room.cleanupTimer = setTimeout(() => {
-          if (rooms.get(roomCode) === room && room.players.every(p => !p.connected)) {
+          if (rooms.get(roomCode) === room && room.players.every(p => p.bot || !p.connected)) {
             room.players.forEach(p => clearTimeout(p.expiryTimer));
+            clearTimeout(room.botTimer);
             rooms.delete(roomCode);
           }
         }, reconnectGraceMs);
@@ -303,6 +342,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000 } = {}) {
       io.close(() => {
         for (const room of rooms.values()) {
           clearTimeout(room.cleanupTimer);
+          clearTimeout(room.botTimer);
           room.players.forEach(p => clearTimeout(p.expiryTimer));
         }
         resolve();

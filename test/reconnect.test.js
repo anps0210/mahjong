@@ -225,3 +225,51 @@ test("wall exhaustion returns to lobby and a new game resets discard history", a
   assert.equal(players[0].state.hand.length, 14);
   assert.equal(players[0].state.wallCount, 69);
 });
+
+test("solo player completes a round with three bots and resumes interrupted bot turns", async t => {
+  const { connect, join } = await setup(t, {botDelayMs:20});
+  const host=await connect();
+  const session=await join(host,'room:create',{});
+  const filled=event(host,'room:update',r=>r.players.length===4);
+  assert.equal((await call(host,'room:bots',{fill:true})).ok,true);await filled;
+  assert.equal(host.room.players.filter(p=>p.bot).length,3);
+  const start=event(host,'room:update',r=>r.started);
+  assert.equal((await call(host,'game:start')).ok,true);await start;
+  assert.equal((await call(host,'room:bots',{fill:false})).ok,false);
+  assert.equal((await call(host,'game:discard',{tile:host.state.hand[0]})).ok,true);
+  host.disconnect();
+  await new Promise(r=>setTimeout(r,80));
+  const resumed=await connect();
+  await join(resumed,'room:resume',session);
+  // No bot should have consumed the remaining round during a disconnection.
+  assert.ok(resumed.state.discards.length<=4);
+  while(resumed.room.started) {
+    if(resumed.state.turn!==0) {
+      await event(resumed,'room:update',r=>r.turn===0 || !r.started);
+      continue;
+    }
+    const updated=event(resumed,'room:update');
+    assert.equal((await call(resumed,'game:discard',{tile:resumed.state.hand[0]})).ok,true);
+    await updated;
+  }
+  assert.equal(resumed.state.discards.length,70);
+  const removed=event(resumed,'room:update',r=>r.players.length===1);
+  assert.equal((await call(resumed,'room:bots',{fill:false})).ok,true);await removed;
+  assert.equal(resumed.state.mySeat,0);
+});
+
+test("only host controls bots; bot-only rooms expire after humans leave", async t => {
+  const {connect,join}=await setup(t,{reconnectGraceMs:60});
+  const host=await connect();const session=await join(host,'room:create',{});
+  const guest=await connect();await join(guest,'room:join',{code:session.code});
+  assert.equal((await call(guest,'room:bots',{fill:true})).ok,false);
+  const full=event(host,'room:update',r=>r.players.length===4);
+  assert.equal((await call(host,'room:bots',{fill:true})).ok,true);await full;
+  assert.equal(host.room.players.filter(p=>p.bot).length,2);
+  const changed=event(guest,'room:update',r=>r.players[1].host);
+  host.disconnect();await changed;
+  assert.equal(guest.room.players.filter(p=>p.bot&&p.host).length,0);
+  guest.disconnect();await new Promise(r=>setTimeout(r,160));
+  const fresh=await connect();
+  assert.equal((await call(fresh,'room:resume',session)).ok,false);
+});
