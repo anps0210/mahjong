@@ -33,6 +33,7 @@ test("actual page restores a refreshed player, disables offline actions and resu
     });
     pages.push(dom);
     await until(() => dom.window.document.getElementById("connectionStatus")?.textContent === "서버에 연결됨");
+    dom.window.eval(`socket.on("game:private", s => { if(s.call?.options.length && !s.call.answered) socket.emit("game:call", {id:s.call.id,choice:null}); });`);
     return dom;
   }
   const element = (dom, id) => dom.window.document.getElementById(id);

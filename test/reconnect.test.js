@@ -10,6 +10,7 @@ function event(socket, name, predicate = () => true) {
       reject(new Error(`Timed out: ${name}`));
     }, 3000);
     function listener(data) {
+      if ((name === "game:private" || name === "room:update") && data.waiting) return;
       if (!predicate(data)) return;
       clearTimeout(timer);
       socket.off(name, listener);
@@ -39,7 +40,10 @@ async function setup(t, options) {
   async function connect() {
     const socket = io(url, { autoConnect: false, reconnection: false });
     sockets.push(socket);
-    socket.on("game:private", state => { socket.state = state; });
+    socket.on("game:private", state => {
+      if (!state.waiting) socket.state = state;
+      if (state.call?.options.length && !state.call.answered) socket.emit("game:call", {id:state.call.id,choice:null});
+    });
     socket.on("room:update", room => { socket.room = room; });
     const connected = event(socket, "connect");
     socket.connect();
