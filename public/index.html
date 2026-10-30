@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>雀 ROOM - 온라인 마작</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="shell">
+<header>
+<div class="brand">雀 <span>ROOM</span></div>
+<div class="sub">ONLINE MULTIPLAYER MAHJONG</div>
+</header>
+
+<section id="home" class="panel">
+<h1>온라인 마작</h1>
+<p class="muted">방을 만들거나 초대 코드를 입력해 참가하세요.</p>
+<label>닉네임
+<input id="nickname" maxlength="12" placeholder="닉네임" value="플레이어">
+</label>
+<button id="create" class="primary">방 만들기</button>
+<div class="joinrow">
+<input id="roomcode" maxlength="5" placeholder="방 코드 (5자리)">
+<button id="join">입장</button>
+</div>
+<p id="homeError" class="error"></p>
+</section>
+
+<section id="lobby" class="panel hidden">
+<div class="roomhead">
+<div><div class="muted">ROOM CODE</div><div id="code" class="code"></div></div>
+<button id="copy">코드 복사</button>
+</div>
+<h2>참가자 <span id="count">0/4</span></h2>
+<div id="players" class="players"></div>
+<p class="muted">4명이 모이면 방장이 게임을 시작할 수 있어.</p>
+<button id="start" class="primary">게임 시작</button>
+<p id="lobbyError" class="error"></p>
+</section>
+
+<section id="game" class="panel hidden">
+<div class="gamehead">
+<div><b id="gameCode"></b><span id="wall" class="muted"></span></div>
+<span id="turnText" class="turn"></span>
+</div>
+<div id="seats" class="seats"></div>
+<div class="tablecenter">
+<div class="tablelabel">DISCARDS</div>
+<div id="discards" class="discards"></div>
+<p id="gameMessage" class="muted"></p>
+</div>
+<h3>내 패 <small>내 차례에 버릴 패를 선택하세요.</small></h3>
+<div id="hand" class="hand"></div>
+</section>
+
+<footer>Mahjong Room · 실시간 방/턴 동기화 데모</footer>
+</main>
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
