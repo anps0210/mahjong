@@ -19,6 +19,8 @@ let ownRiichi = false;
 let riichiChoices = [];
 let choosingRiichi = false;
 let shantenValue = null;
+let canTsumo = false;
+let kanChoices = [];
 let ready = false;
 let pending = false;
 let replaced = false;
@@ -47,6 +49,8 @@ function controls() {
   $("fillBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || roomState.players.length >= 4;
   $("removeBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || !roomState.players.some(p => p.bot);
   $("callPanel").querySelectorAll("button").forEach(b => { b.disabled = !ready || pending || roomState?.paused || callState?.answered; });
+  $("tsumoButton").disabled = !ready || pending || !canTsumo || roomState?.paused || waitingCall;
+  $("selfKanActions").querySelectorAll("button").forEach(b=>b.disabled=!ready||pending||roomState?.paused||waitingCall);
   $("riichiButton").disabled = !ready || pending || !roomState?.started || roomState.paused || waitingCall || currentTurn !== mySeat || ownRiichi || !riichiChoices.length;
   $("hand").querySelectorAll("button").forEach(b => {
     b.classList.toggle("selected-tile", Number(b.dataset.i) === selectedHandIndex);
@@ -145,6 +149,8 @@ $("start").onclick = () => {
 socket.on("room:update", room => {
   if (room.code !== roomCode) return;
   roomState = room;
+  renderResult(room);
+  $("doraIndicators").innerHTML = `<small>도라 표시패</small>${(room.doraIndicators||[]).map(t=>tileFace(t)).join("")}`;
   if (room.paused || !room.started) { selectedHandIndex = null; renderDiscards(); }
   $("riichiPot").textContent = `供託 · ${(room.riichiPot || 0) * 1000}점`;
   renderTurn();
@@ -177,6 +183,12 @@ socket.on("room:update", room => {
 socket.on("game:private", s => {
   selectedHandIndex = null;
   myHand = s.hand;
+  canTsumo = s.canTsumo;
+  kanChoices = s.kanOptions || [];
+  $("tsumoButton").classList.toggle("hidden", !canTsumo);
+  $("furitenBadge").classList.toggle("hidden", !s.furiten);
+  $("selfKanActions").innerHTML = kanChoices.map((o,i)=>`<button data-kan="${i}">${o.type==='ankan'?'암깡':'가깡'} · ${escapeHtml(o.tile)}</button>`).join("");
+  $("selfKanActions").querySelectorAll("button").forEach(b=>b.onclick=()=>request("game:kan",{id:kanChoices[Number(b.dataset.kan)].id},res=>{if(res?.error)$("gameMessage").textContent=res.error;}));
   ownRiichi = s.riichi;
   riichiChoices = s.riichiDiscards || [];
   shantenValue = s.shanten;
@@ -273,10 +285,10 @@ function renderCalls() {
   panel.classList.toggle("hidden", !waitingCall);
   if (!waitingCall) { panel.innerHTML = ""; return; }
   if (!callState?.options.length || callState.answered) {
-    panel.innerHTML = '<strong>다른 플레이어의 부로 선택을 기다리고 있어요…</strong>';
+    panel.innerHTML = '<strong>다른 플레이어의 론·부로 선택을 기다리고 있어요…</strong>';
     return;
   }
-  panel.innerHTML = `<div class="call-target">${tileFace(callState.tile)}<strong>이 패를 울 수 있어요</strong></div><div class="call-actions">${callState.options.map(o=>`<button data-choice="${o.id}"><b>${{chi:'치',pon:'퐁',kan:'깡'}[o.type]}</b><span class="call-preview">${o.consume.map(t=>tileFace(t)).join('')}</span></button>`).join('')}<button data-choice="skip" class="skip-call">스킵</button></div>`;
+  panel.innerHTML = `<div class="call-target">${tileFace(callState.tile)}<strong>이 패에 응답할 수 있어요</strong></div><div class="call-actions">${callState.options.map(o=>`<button data-choice="${o.id}"><b>${{chi:'치',pon:'퐁',kan:'깡',ron:'론',ankan:'암깡',kakan:'가깡'}[o.type]}</b><span class="call-preview">${o.consume.map(t=>tileFace(t)).join('')}</span></button>`).join('')}<button data-choice="skip" class="skip-call">스킵</button></div>`;
   panel.querySelectorAll('button').forEach(b=>b.onclick=()=>request('game:call',{id:callState.id,choice:b.dataset.choice==='skip'?null:b.dataset.choice},res=>{if(res?.error) $("gameMessage").textContent=res.error;}));
 }
 function renderMelds() {
@@ -284,13 +296,22 @@ function renderMelds() {
     const seat=(Math.max(0,mySeat)+offset)%4;
     const melds=publicMelds[seat] || [];
     if(!melds.length) return '';
-    return `<div class="meld-row"><strong>${winds[seat]}가${seat===mySeat?' · 나':''}</strong>${melds.map(m=>`<div class="meld-group" aria-label="${winds[m.from]}가에서 ${m.type}"><small>${{chi:'치',pon:'퐁',kan:'깡'}[m.type]} · ${winds[m.from]}가</small><div>${m.tiles.map(t=>tileFace(t)).join('')}</div></div>`).join('')}</div>`;
+    return `<div class="meld-row"><strong>${winds[seat]}가${seat===mySeat?' · 나':''}</strong>${melds.map(m=>`<div class="meld-group" aria-label="${m.type==='ankan'?'멘젠':winds[m.from]+'가'}에서 ${m.type}"><small>${{chi:'치',pon:'퐁',kan:'깡',ron:'론',ankan:'암깡',kakan:'가깡'}[m.type]} · ${m.type==='ankan'?'멘젠':winds[m.from]+'가'}</small><div>${m.tiles.map(t=>tileFace(t)).join('')}</div></div>`).join('')}</div>`;
   }).join('');
+}
+
+$("tsumoButton").onclick = () => request("game:tsumo",undefined,res=>{if(res?.error)$("gameMessage").textContent=res.error;});
+function renderResult(room) {
+  const panel=$("roundResult"),r=room.result;
+  panel.classList.toggle("hidden",!r);
+  if(!r){panel.innerHTML='';return;}
+  const name=seat=>escapeHtml(r.names?.[seat]||room.players[seat]?.name||`플레이어 ${seat+1}`);
+  panel.innerHTML=`<h2>${r.type==='win'?'화료':r.nagashi?.length?'유국만관':'유국'}</h2>${r.type==='draw'?`<p>${escapeHtml(r.reason||'')} · ${r.nagashi?.length?'유국만관: '+r.nagashi.map(name).join(', '):'텐파이: '+((r.tenpai||[]).map(name).join(', ')||'없음')}</p>`:''}${(r.winners||[]).map(w=>`<article class="winner-result"><h3>${name(w.seat)} · ${w.method==='ron'?`론 (${name(w.from)})`:'쯔모'} · ${w.points.toLocaleString()}점</h3><p>${w.yakuman?`${w.yakuman}배 역만`:`${w.han}판 ${w.fu}부`}</p><ul>${w.yaku.map(y=>`<li>${escapeHtml(y.name)} <b>${y.yakuman?`${y.yakuman}배 역만`:`${y.han}판`}</b></li>`).join('')}</ul><div class="winning-hand">${w.hand.map(t=>tileFace(t)).join('')}${w.melds.map(m=>`<span class="result-meld">${m.tiles.map(t=>tileFace(t)).join('')}</span>`).join('')}</div></article>`).join('')}<div class="result-scores">${r.scores.map((score,i)=>`<div><strong>${name(i)}</strong><span>${score.toLocaleString()}점</span><b class="${r.deltas[i]>=0?'gain':'loss'}">${r.deltas[i]>0?'+':''}${r.deltas[i].toLocaleString()}</b></div>`).join('')}</div>${r.pot?`<p>리치 공탁금 ${r.pot.toLocaleString()}점 포함</p>`:''}${r.doraIndicators?.length?`<p>도라 표시패: ${r.doraIndicators.map(escapeHtml).join(' · ')}</p>`:''}${r.uraIndicators?.length?`<p>우라도라 표시패: ${r.uraIndicators.map(escapeHtml).join(' · ')}</p>`:''}`;
 }
 
 function renderShanten() {
   $("shantenValue").classList.toggle("hidden", !$("showShanten").checked);
-  $("shantenValue").textContent = shantenValue == null ? "" : shantenValue === -1 ? "완성형 (화료 판정 전)" : shantenValue === 0 ? "텐파이 · 0샹텐" : `${shantenValue}샹텐`;
+  $("shantenValue").textContent = shantenValue == null ? "" : shantenValue === -1 ? "완성형" : shantenValue === 0 ? "텐파이 · 0샹텐" : `${shantenValue}샹텐`;
 }
 try { $("showShanten").checked = localStorage.getItem("mahjong.showShanten") !== "false"; } catch {}
 $("showShanten").onchange = () => {
@@ -306,9 +327,9 @@ $("riichiButton").onclick = () => {
   controls();
 };
 function renderTurn() {
-  $("turnText").textContent = roomState?.paused ? "복귀 대기" : waitingCall ? "부로 선택 중" : currentTurn === mySeat ? "내 차례" : `플레이어 ${currentTurn + 1} 차례`;
+  $("turnText").textContent = roomState?.paused ? "복귀 대기" : waitingCall ? "론·부로 선택 중" : currentTurn === mySeat ? "내 차례" : `플레이어 ${currentTurn + 1} 차례`;
   $("turnText").classList.toggle("my-turn",currentTurn===mySeat && !roomState?.paused && !waitingCall);
-  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "치·퐁·깡 또는 스킵을 선택하세요" : selectedHandIndex !== null ? `${myHand[selectedHandIndex]} · 한 번 더 누르면 ${choosingRiichi ? "리치 선언" : "버립니다"}` : choosingRiichi ? "강조된 패를 두 번 눌러 리치하세요" : ownRiichi && currentTurn===mySeat ? "쯔모패를 두 번 눌러 버리세요" : currentTurn===mySeat ? "한 번 선택 · 다시 눌러 버리기" : "다른 플레이어의 차례입니다";
+  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "론·치·퐁·깡 또는 스킵을 선택하세요" : selectedHandIndex !== null ? `${myHand[selectedHandIndex]} · 한 번 더 누르면 ${choosingRiichi ? "리치 선언" : "버립니다"}` : choosingRiichi ? "강조된 패를 두 번 눌러 리치하세요" : ownRiichi && currentTurn===mySeat ? "쯔모패를 두 번 눌러 버리세요" : currentTurn===mySeat ? "한 번 선택 · 다시 눌러 버리기" : "다른 플레이어의 차례입니다";
   $("seats").innerHTML = [0,1,2,3].map(offset => {
     const i=(Math.max(0,mySeat)+offset)%4;
     const p=roomState?.players[i];

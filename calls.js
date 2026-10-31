@@ -1,4 +1,6 @@
 const { randomUUID } = require('crypto');
+const { evaluateWin } = require('./scoring');
+const { replacement } = require('./kongs');
 function optionsFor(hand, tile, seat, from, canKan) {
   const options=[];
   const count=hand.filter(t=>t===tile).length;
@@ -24,11 +26,12 @@ function optionsFor(hand, tile, seat, from, canKan) {
   }).map((o,index)=>({...o,id:String(index)}));
 }
 function openWindow(room, from, tile) {
-  if(!room.wall.length) return null;
+
   const offers={};
   room.players.forEach((p,seat)=>{
-    if(seat===from || p.riichi) return;
-    const choices=optionsFor(p.hand,tile,seat,from,(room.kanCount||0)<4 && room.deadWall.length>0);
+    if(seat===from) return;
+    const choices= !p.riichi && room.wall.length ? optionsFor(p.hand,tile,seat,from,(room.kanCount||0)<4 && room.deadWall.length>0) : [];
+    if(evaluateWin(room,seat,{tile,from})) choices.unshift({id:"ron",type:"ron",consume:[],banned:[]});
     if(choices.length) offers[seat]=choices;
   });
   if(!Object.keys(offers).length) return null;
@@ -36,7 +39,7 @@ function openWindow(room, from, tile) {
 }
 function winner(window) {
   return Object.entries(window.responses).filter(([,choice])=>choice!==null).map(([seat,id])=>({seat:Number(seat),option:window.offers[seat].find(o=>o.id===id)})).sort((a,b)=>
-    Number(a.option.type==='chi')-Number(b.option.type==='chi') || (a.seat-window.from+4)%4-(b.seat-window.from+4)%4
+    ({ron:0,pon:1,kan:1,chi:2}[a.option.type])-({ron:0,pon:1,kan:1,chi:2}[b.option.type]) || (a.seat-window.from+4)%4-(b.seat-window.from+4)%4
   )[0] || null;
 }
 function applyCall(room, window, choice) {
@@ -47,11 +50,12 @@ function applyCall(room, window, choice) {
   room.discards[window.index].calledBy=seat;
   p.banned=option.banned;
   p.drawn=null;
+  p.rinshan=false;
+  room.interrupted=true;
+  room.players.forEach(player=>player.ippatsu=false);
   room.turn=seat;
   if(option.type==='kan') {
-    p.drawn=room.deadWall.pop();p.hand.push(p.drawn);
-    room.deadWall.unshift(room.wall.pop());
-    room.kanCount++;
+    replacement(room,p);
   }
 }
 module.exports={optionsFor,openWindow,winner,applyCall};

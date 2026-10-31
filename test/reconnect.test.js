@@ -256,7 +256,8 @@ test("solo player completes a round with three bots and resumes interrupted bot 
     assert.equal((await call(resumed,'game:discard',{tile:resumed.state.hand[0]})).ok,true);
     await updated;
   }
-  assert.equal(resumed.state.discards.length,70);
+  assert.ok(resumed.state.discards.length<=70);
+  assert.ok(resumed.room.result);
   const removed=event(resumed,'room:update',r=>r.players.length===1);
   assert.equal((await call(resumed,'room:bots',{fill:false})).ok,true);await removed;
   assert.equal(resumed.state.mySeat,0);

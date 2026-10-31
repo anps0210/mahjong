@@ -18,7 +18,7 @@ async function setup(t){
  const game=createGameServer({dealWall:wall});await new Promise(r=>game.server.listen(0,'127.0.0.1',r));
  const sockets=[];const sessions=[];
  t.after(async()=>{sockets.forEach(s=>s.disconnect());await game.close()});
- async function connect(){const s=io(`http://127.0.0.1:${game.server.address().port}`,{reconnection:false});sockets.push(s);s.on('game:private',v=>s.state=v);s.on('room:update',v=>s.room=v);await until(()=>s.connected);return s}
+ async function connect(){const s=io(`http://127.0.0.1:${game.server.address().port}`,{reconnection:false});sockets.push(s);s.on('game:private',v=>{s.state=v;if(v.call?.options.length && v.call.options.every(o=>o.type==='ron'))s.emit('game:call',{id:v.call.id,choice:null})});s.on('room:update',v=>s.room=v);await until(()=>s.connected);return s}
  const players=[];
  for(let i=0;i<4;i++){const s=await connect();players.push(s);sessions.push(await call(s,i?'room:join':'room:create',{code:sessions[0]?.code,name:`P${i}`}));}
  await call(players[0],'game:start');await until(()=>players.every(s=>s.state?.hand.length>=13));
@@ -83,7 +83,7 @@ test('pending call survives reconnect; all skips draw exactly once',async t=>{
  assert.equal((await call(fresh,'game:call',{id,choice:null})).ok,false);
 });
 test('no calls on last discard, and equal priorities follow turn distance',()=>{
- assert.equal(openWindow({wall:[]},0,'3만'),null);
+ assert.equal(openWindow({wall:[],players:[]},0,'3만'),null);
  assert.equal(winner({from:0,offers:{1:[{id:'0',type:'pon'}],3:[{id:'0',type:'kan'}]},responses:{3:'0',1:'0'}}).seat,1);
 });
 
