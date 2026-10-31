@@ -8,6 +8,7 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@kobalab/majiang-core": "1.4.1",
     "express": "^4.21.2",
     "socket.io": "^4.8.1"
   },

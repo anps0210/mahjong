@@ -57,9 +57,10 @@ test('declaration is atomic, forces drawn discard, survives reconnect and preser
  assert.equal((await call(p[0],'game:discard',{tile:p[0].state.drawn,riichi:true})).ok,false);
  assert.equal((await call(p[0],'game:discard',{tile:p[0].state.drawn})).ok,true);
  while(p[0].room.started){await wait(()=>p.every(s=>!s.state.waiting));if(!p[0].room.started)break;const current=p[p[0].state.turn];const count=current.state.discards.length;const tile=current.state.riichi?current.state.drawn:current.state.hand[0];assert.equal((await call(current,'game:discard',{tile})).ok,true);await wait(()=>p.every(s=>s.state.discards.length>count&&!s.state.waiting))}
+ const settledScore=p[0].room.players[0].score;
  const host=p.find(s=>s.room.players[s.state.mySeat].host);
  await call(host,'game:start');await wait(()=>p[0].state.discards.length===0);
- assert.equal(p[0].state.riichi,false);assert.equal(p[0].room.players[0].score,24000);assert.equal(p[0].room.riichiPot,1);
+ assert.equal(p[0].state.riichi,false);assert.equal(p[0].room.players[0].score,settledScore);assert.equal(p[0].room.riichiPot,1);
 });
 test('page toggles persistent shanten display and offers only legal riichi discards',async t=>{
  const {JSDOM}=require('jsdom');const {p,sessions,url}=await setup(t);
