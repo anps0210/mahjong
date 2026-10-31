@@ -73,6 +73,9 @@ test('page toggles persistent shanten display and offers only legal riichi disca
  assert.equal(d.querySelector('[aria-label="1만 버리기"]').disabled,true);
  d.getElementById('riichiButton').click();assert.equal(d.querySelectorAll('.riichi-candidate').length,0);
  d.getElementById('riichiButton').click();d.querySelector('[aria-label="백 버리기"]').click();
+ assert.ok(d.querySelector('[aria-label="백 버리기"]').classList.contains("selected-tile"));
+ assert.equal(p[1].room.players[0].riichi,false);
+ d.querySelector('[aria-label="백 버리기"]').click();
  await wait(()=>d.getElementById('riichiButton').textContent.includes('완료'));
  assert.ok(d.querySelector('.riichi-discard'));assert.ok(d.getElementById('riichiPot').textContent.includes('1000'));
  assert.ok(p[1].room.players[0].riichi);

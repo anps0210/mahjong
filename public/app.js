@@ -5,6 +5,7 @@ const $ = id => document.getElementById(id);
 
 let roomCode = null;
 let myHand = [];
+let selectedHandIndex = null;
 let mySeat = -1;
 let currentTurn = 0;
 let lastDiscards = [];
@@ -48,6 +49,8 @@ function controls() {
   $("callPanel").querySelectorAll("button").forEach(b => { b.disabled = !ready || pending || roomState?.paused || callState?.answered; });
   $("riichiButton").disabled = !ready || pending || !roomState?.started || roomState.paused || waitingCall || currentTurn !== mySeat || ownRiichi || !riichiChoices.length;
   $("hand").querySelectorAll("button").forEach(b => {
+    b.classList.toggle("selected-tile", Number(b.dataset.i) === selectedHandIndex);
+    b.setAttribute("aria-pressed", String(Number(b.dataset.i) === selectedHandIndex));
     b.classList.toggle("riichi-candidate", choosingRiichi && riichiChoices.includes(myHand[Number(b.dataset.i)]));
     b.disabled = !ready || pending || !roomState?.started || roomState.paused || waitingCall || currentTurn !== mySeat || bannedTiles.includes(myHand[Number(b.dataset.i)]) || (ownRiichi && Number(b.dataset.i) !== myHand.length-1) || (choosingRiichi && !riichiChoices.includes(myHand[Number(b.dataset.i)]));
   });
@@ -142,6 +145,7 @@ $("start").onclick = () => {
 socket.on("room:update", room => {
   if (room.code !== roomCode) return;
   roomState = room;
+  if (room.paused || !room.started) { selectedHandIndex = null; renderDiscards(); }
   $("riichiPot").textContent = `供託 · ${(room.riichiPot || 0) * 1000}점`;
   renderTurn();
 
@@ -171,6 +175,7 @@ socket.on("room:update", room => {
 });
 
 socket.on("game:private", s => {
+  selectedHandIndex = null;
   myHand = s.hand;
   ownRiichi = s.riichi;
   riichiChoices = s.riichiDiscards || [];
@@ -235,18 +240,32 @@ function renderHand() {
   if (drawn) tiles.push(drawn);
   $("hand").innerHTML = tiles.map(({tile,i}) => `<button aria-label="${tile} 버리기" data-i="${i}" class="${drawn?.i === i ? 'drawn' : ''}">${tileFace(tile)}</button>`).join("");
   $("hand").querySelectorAll("button").forEach(b => {
-    b.onclick = () => request("game:discard", { tile: myHand[Number(b.dataset.i)], riichi: choosingRiichi }, res => {
-      if (res?.error) $("gameMessage").textContent = res.error;
-    });
+    b.onclick = () => {
+      const index = Number(b.dataset.i);
+      if (selectedHandIndex !== index) {
+        selectedHandIndex = index;
+        controls();
+        renderDiscards();
+        renderTurn();
+        return;
+      }
+      const tile = myHand[index];
+      selectedHandIndex = null;
+      controls();
+      renderDiscards();
+      request("game:discard", { tile, riichi: choosingRiichi }, res => {
+        if (res?.error) $("gameMessage").textContent = res.error;
+      });
+    };
   });
   controls();
 }
-$("sortHand").onchange = renderHand;
+$("sortHand").onchange = () => { selectedHandIndex = null; renderHand(); renderDiscards(); renderTurn(); };
 function renderDiscards() {
   $("discards").innerHTML = [0,1,2,3].map(offset => {
     const seat = (Math.max(0,mySeat)+offset)%4;
     const tiles = lastDiscards.map((d,i)=>({...d,index:i})).filter(d=>d.seat===seat);
-    return `<div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${d.riichi ? 'riichi-discard' : ''} ${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div>`;
+    return `<div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${selectedHandIndex !== null && d.tile === myHand[selectedHandIndex] ? 'matching-tile' : ''} ${d.riichi ? 'riichi-discard' : ''} ${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div>`;
   }).join("");
 }
 function renderCalls() {
@@ -279,6 +298,8 @@ $("showShanten").onchange = () => {
   renderShanten();
 };
 $("riichiButton").onclick = () => {
+  selectedHandIndex = null;
+  renderDiscards();
   choosingRiichi = !choosingRiichi;
   $("riichiButton").textContent = choosingRiichi ? "리치 선택 취소" : "리치 · 1,000점";
   renderTurn();
@@ -287,7 +308,7 @@ $("riichiButton").onclick = () => {
 function renderTurn() {
   $("turnText").textContent = roomState?.paused ? "복귀 대기" : waitingCall ? "부로 선택 중" : currentTurn === mySeat ? "내 차례" : `플레이어 ${currentTurn + 1} 차례`;
   $("turnText").classList.toggle("my-turn",currentTurn===mySeat && !roomState?.paused && !waitingCall);
-  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "치·퐁·깡 또는 스킵을 선택하세요" : choosingRiichi ? "강조된 패를 버리면 리치가 확정됩니다" : ownRiichi && currentTurn===mySeat ? "리치 중 · 뽑은 패를 버리세요" : currentTurn===mySeat ? "버릴 패를 선택하세요" : "다른 플레이어의 차례입니다";
+  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "치·퐁·깡 또는 스킵을 선택하세요" : selectedHandIndex !== null ? `${myHand[selectedHandIndex]} · 한 번 더 누르면 ${choosingRiichi ? "리치 선언" : "버립니다"}` : choosingRiichi ? "강조된 패를 두 번 눌러 리치하세요" : ownRiichi && currentTurn===mySeat ? "쯔모패를 두 번 눌러 버리세요" : currentTurn===mySeat ? "한 번 선택 · 다시 눌러 버리기" : "다른 플레이어의 차례입니다";
   $("seats").innerHTML = [0,1,2,3].map(offset => {
     const i=(Math.max(0,mySeat)+offset)%4;
     const p=roomState?.players[i];
@@ -350,6 +371,8 @@ function restore() {
 
 socket.on("connect", restore);
 socket.on("disconnect", () => {
+  selectedHandIndex = null;
+  renderDiscards();
   ready = false;
   pending = false;
   controls();
@@ -370,5 +393,19 @@ socket.on("session:replaced", () => {
   controls();
 });
 $("retryConnection").onclick = () => socket.disconnect().connect();
+$("fullscreenButton").onclick = async () => {
+  try {
+    if (document.fullscreenElement) { await document.exitFullscreen(); return; }
+    if (!document.documentElement.requestFullscreen) {
+      $("gameMessage").textContent = "기기를 가로로 돌려 주세요. 이 브라우저는 전체화면을 지원하지 않아요.";
+      return;
+    }
+    await document.documentElement.requestFullscreen();
+    try { await screen.orientation?.lock?.("landscape"); } catch { /* Rotation remains user-controlled when unsupported. */ }
+  } catch { $("gameMessage").textContent = "기기를 가로로 돌리면 넓은 화면으로 플레이할 수 있어요."; }
+};
+document.addEventListener("fullscreenchange", () => {
+  $("fullscreenButton").textContent = document.fullscreenElement ? "전체화면 해제" : "전체화면";
+});
 controls();
 socket.connect();

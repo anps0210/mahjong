@@ -105,6 +105,6 @@ test('page highlights callable discard, offers each chi, and displays claimed me
  assert.equal(doc.querySelectorAll('.river .callable').length,0);
  assert.equal(doc.querySelectorAll('.river .claimed').length,1);
  assert.ok(doc.getElementById('callPanel').classList.contains('hidden'));
- const legal=doc.querySelector('#hand button:not(:disabled)');assert.ok(legal);legal.click();
+ const legal=doc.querySelector('#hand button:not(:disabled)');assert.ok(legal);legal.click();legal.click();
  await until(()=>p[0].state.discards.length===2);
 });
