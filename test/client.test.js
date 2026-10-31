@@ -66,6 +66,9 @@ test("actual page restores a refreshed player, disables offline actions and resu
   assert.equal(element(refreshed, "hand").textContent, hand);
   assert.equal(element(refreshed, "turnText").textContent, "내 차례");
   element(refreshed, "hand").querySelector("button").click();
+  assert.equal(element(refreshed, "hand").querySelector("button").getAttribute("aria-pressed"), "true");
+  assert.equal(element(refreshed, "discards").querySelectorAll(".tile").length, 0);
+  element(refreshed, "hand").querySelector("button").click();
   await until(() => element(refreshed, "discards").querySelectorAll(".tile").length === 1);
   assert.equal(element(refreshed, "hand").querySelectorAll("button").length, 13);
 
@@ -79,6 +82,7 @@ test("actual page restores a refreshed player, disables offline actions and resu
   await until(() => !element(guest, "hand").querySelector("button").disabled);
   assert.equal(element(guest, "hand").textContent, guestHand);
   assert.equal(element(guest, "discards").querySelectorAll(".tile").length, 1);
+  element(guest, "hand").querySelector("button").click();
   element(guest, "hand").querySelector("button").click();
   await until(() => element(refreshed, "discards").querySelectorAll(".tile").length === 2);
 });
@@ -102,4 +106,46 @@ test("expired browser session returns to home with an actionable message", async
   assert.equal(page.window.sessionStorage.getItem("mahjong.session.v1"), null);
   assert.equal(page.window.document.getElementById("home").classList.contains("hidden"), false);
   assert.equal(page.window.document.getElementById("create").disabled, false);
+});
+
+test('selection requires the same physical tile twice and highlights matching discards', async t => {
+  const game = createGameServer();
+  await new Promise(resolve => game.server.listen(0, '127.0.0.1', resolve));
+  const page = await JSDOM.fromURL(`http://127.0.0.1:${game.server.address().port}`, {resources:'usable',runScripts:'dangerously'});
+  t.after(async()=>{page.window.eval('socket.disconnect()');page.window.close();await game.close()});
+  await until(()=>page.window.document.getElementById('connectionStatus')?.textContent === '서버에 연결됨');
+  page.window.document.getElementById('create').click();
+  await until(()=>page.window.sessionStorage.getItem('mahjong.session.v1'));
+  page.window.eval(`
+    window.sentDiscards = [];
+    const originalEmit = socket.emit.bind(socket);
+    socket.emit = (event, ...args) => {
+      if (event === 'game:discard') { window.sentDiscards.push(args[0]); return socket; }
+      return originalEmit(event, ...args);
+    };
+    window.snapshot = {hand:['3만','3만','1통','2통','3통','1삭','2삭','3삭','동','동','백','백','발','중'], mySeat:0, turn:0, discards:[{tile:'3만',seat:1},{tile:'4만',seat:2},{tile:'3만',seat:3}], waiting:false, melds:[], riichi:false, riichiDiscards:[], shanten:2};
+    socket.emitEvent(['game:private', window.snapshot]);
+    socket.emitEvent(['room:update', {code:roomCode,started:true,turn:0,players:[{name:'Me',host:true,connected:true},{name:'B',connected:true},{name:'C',connected:true},{name:'D',connected:true}]}]);
+  `);
+  const d = page.window.document;
+  const first = d.querySelector('#hand [data-i="0"]');
+  const duplicate = d.querySelector('#hand [data-i="1"]');
+  first.click();
+  assert.equal(page.window.sentDiscards.length,0);
+  assert.equal(first.getAttribute('aria-pressed'),'true');
+  assert.equal(d.querySelectorAll('.river .matching-tile').length,2);
+  duplicate.click();
+  assert.equal(page.window.sentDiscards.length,0);
+  assert.equal(first.getAttribute('aria-pressed'),'false');
+  assert.equal(duplicate.getAttribute('aria-pressed'),'true');
+  d.getElementById('sortHand').click();
+  assert.equal(d.querySelectorAll('.selected-tile,.matching-tile').length,0);
+  d.querySelector('#hand [data-i="0"]').click();
+  page.window.eval("socket.emitEvent(['game:private',window.snapshot])");
+  assert.equal(d.querySelectorAll('.selected-tile,.matching-tile').length,0);
+  const current = d.querySelector('#hand [data-i="0"]');
+  current.click();current.click();current.click();
+  assert.equal(page.window.sentDiscards.length,1);
+  assert.equal(page.window.sentDiscards[0].tile,'3만');
+  assert.equal(d.querySelectorAll('.matching-tile').length,0);
 });
