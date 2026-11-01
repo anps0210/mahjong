@@ -206,8 +206,9 @@ socket.on("game:private", s => {
   lastDiscards = s.discards || [];
 
   $("wall").textContent =
-    `잔여 ${s.wallCount}패`;
+    `X ${s.wallCount}`;
 
+  $("wall").setAttribute("aria-label", `남은 패 ${s.wallCount}장`);
   renderCalls();
   renderMelds();
   renderHand();
