@@ -56,7 +56,7 @@ function controls() {
     b.classList.toggle("selected-tile", Number(b.dataset.i) === selectedHandIndex);
     b.setAttribute("aria-pressed", String(Number(b.dataset.i) === selectedHandIndex));
     b.classList.toggle("riichi-candidate", choosingRiichi && riichiChoices.includes(myHand[Number(b.dataset.i)]));
-    b.disabled = !ready || pending || !roomState?.started || roomState.paused || waitingCall || currentTurn !== mySeat || bannedTiles.includes(myHand[Number(b.dataset.i)]) || (ownRiichi && Number(b.dataset.i) !== myHand.length-1) || (choosingRiichi && !riichiChoices.includes(myHand[Number(b.dataset.i)]));
+    b.disabled = !ready || pending || !roomState?.started || roomState.paused;
   });
 }
 
@@ -209,6 +209,7 @@ socket.on("game:private", s => {
     `X ${s.wallCount}`;
 
   $("wall").setAttribute("aria-label", `남은 패 ${s.wallCount}장`);
+  $("waitHelp").textContent = s.waits?.length ? `대기패: ${s.waits.join(' · ')}${s.furiten?' · 후리텐':''}` : '';
   renderCalls();
   renderMelds();
   renderHand();
@@ -256,6 +257,7 @@ function renderHand() {
         renderTurn();
         return;
       }
+      if (currentTurn !== mySeat || waitingCall || bannedTiles.includes(myHand[index]) || (ownRiichi && index !== myHand.length-1) || (choosingRiichi && !riichiChoices.includes(myHand[index]))) return;
       const tile = myHand[index];
       selectedHandIndex = null;
       controls();
@@ -325,7 +327,7 @@ $("riichiButton").onclick = () => {
 function renderTurn() {
   $("turnText").textContent = roomState?.paused ? "복귀 대기" : waitingCall ? "론·부로 선택 중" : currentTurn === mySeat ? "내 차례" : `플레이어 ${currentTurn + 1} 차례`;
   $("turnText").classList.toggle("my-turn",currentTurn===mySeat && !roomState?.paused && !waitingCall);
-  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "론·치·퐁·깡 또는 스킵을 선택하세요" : selectedHandIndex !== null ? `${myHand[selectedHandIndex]} · 한 번 더 누르면 ${choosingRiichi ? "리치 선언" : "버립니다"}` : choosingRiichi ? "강조된 패를 두 번 눌러 리치하세요" : ownRiichi && currentTurn===mySeat ? "쯔모패를 두 번 눌러 버리세요" : currentTurn===mySeat ? "한 번 선택 · 다시 눌러 버리기" : "다른 플레이어의 차례입니다";
+  $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "론·치·퐁·깡 또는 스킵을 선택하세요" : selectedHandIndex !== null ? currentTurn!==mySeat?`${myHand[selectedHandIndex]} 선택 · 내 차례에 버릴 수 있어요`:`${myHand[selectedHandIndex]} · 한 번 더 누르면 ${choosingRiichi ? "리치 선언" : "버립니다"}` : choosingRiichi ? "강조된 패를 두 번 눌러 리치하세요" : ownRiichi && currentTurn===mySeat ? "쯔모패를 두 번 눌러 버리세요" : currentTurn===mySeat ? "한 번 선택 · 다시 눌러 버리기" : "다른 플레이어의 차례입니다";
   const seatOrder = [0,1,2,3].map(offset => ({seat:(Math.max(0,mySeat)+offset)%4,position:positions[offset]}));
   $("seats").innerHTML = seatOrder.map(({seat,position}) => {
     const p=roomState?.players[seat];

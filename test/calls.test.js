@@ -97,7 +97,10 @@ test('page highlights callable discard, offers each chi, and displays claimed me
  await until(()=>doc.querySelectorAll('#callPanel [data-choice]').length===4);
  assert.equal(doc.querySelectorAll('.river .callable').length,1);
  assert.equal(doc.querySelectorAll('#callPanel .call-preview').length,3);
- assert.ok([...doc.querySelectorAll('#hand button')].every(b=>b.disabled));
+ assert.ok([...doc.querySelectorAll('#hand button')].every(b=>!b.disabled));
+ const selected=doc.querySelector('#hand button');selected.click();selected.click();
+ assert.equal(selected.getAttribute('aria-pressed'),'true');
+ assert.equal(doc.querySelectorAll('.river .tile').length,1);
  await answer(p[2],null);
  doc.querySelector('#callPanel button[data-choice="0"]').click();
  await until(()=>doc.querySelectorAll('#melds .meld-group').length===1);
