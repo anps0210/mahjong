@@ -263,3 +263,73 @@ body.in-game { background: #b9dad4; color: #163f44; }
  .river-zone { left:10px!important; right:auto!important; bottom:auto!important; width:calc(100% - 20px); height:150px; }
  .river-zone.top { top:174px; }.river-zone.left { top:330px; }.river-zone.right { top:486px; }.river-zone.bottom { top:642px; }
 }
+
+/* Open table: no header strip or hand panel; standard six-tile rivers. */
+body.in-game { background:radial-gradient(ellipse at center,#658e9e,#416b80); }
+.in-game .shell { padding:0; max-width:none; height:100dvh; }
+.in-game #connectionStatus { position:absolute; width:1px; height:1px; min-height:0; overflow:hidden; clip-path:inset(50%); }
+#game, #game:has(.meld-row) { display:block; height:100dvh; padding:0; margin:0; border:0; border-radius:0; background:none; box-shadow:none; }
+.mahjong-table { position:absolute; inset:0; height:100%; width:100%; min-height:0; max-width:none; border:0; border-radius:0; background:transparent; box-shadow:none; }
+.table-grain,.rotate-hint { display:none; }
+.mahjong-table > * { --hand-space:76px; --center-size:clamp(76px,18dvh,140px); --river-tile:clamp(24px,calc(11dvh - 19px),50px); --play-center:calc((100% - var(--hand-space)) / 2); --river-depth:min(calc(3 * var(--river-tile) / .7 + 8px),calc((100cqh - var(--hand-space) - var(--center-size)) / 2 - 8px)); }
+#fullscreenButton { position:absolute; top:8px; right:10px; z-index:8; padding:5px 9px; opacity:.85; }
+.tablecenter { top:var(--play-center); }
+.tablecenter #wall { font-size:clamp(16px,3dvh,24px); line-height:1.1; color:#fff; font-weight:800; letter-spacing:.5px; }
+.center-info { inset:24% 20%; gap:1px; }
+#centerTurn { font-size:clamp(8px,1.8dvh,12px); }
+.tablecenter #riichiPot { font-size:clamp(6px,1.5dvh,10px); }
+#seats { display:block; }
+.seat,.seat.left,.seat.right { background:none; border:0; box-shadow:none; width:125px; color:#eff8fb; }
+.seat strong,.seat small,.seat small:last-child,.seat .wind-badge { color:#f1f7f8; }
+.seat.active { background:#ecd48122; border:0; box-shadow:none; }
+.seat.bottom { bottom:90px; left:12px; }
+.seat.top { top:48px; right:12px; }
+.seat.left { top:24%; left:12px; }
+.seat.right { top:60%; right:12px; }
+.river-zone { display:contents; }
+.river-label { display:none; }
+.river-zone .river { position:absolute; display:grid; width:calc(6 * var(--river-tile) + 14px); height:var(--river-depth); flex:none; padding:2px; gap:2px; grid-template-columns:repeat(6,var(--river-tile)); grid-auto-rows:calc(var(--river-tile) / .7); overflow:auto; scrollbar-width:thin; }
+.river-zone .river.bottom { left:50%; top:calc(var(--play-center) + var(--center-size) / 2 + 6px); bottom:auto; right:auto; transform:translateX(-50%); }
+.river-zone .river.top { left:50%; top:auto; bottom:calc(100% - var(--play-center) + var(--center-size) / 2 + 6px); right:auto; transform:translateX(-50%) rotate(180deg); }
+.river-zone .river.left { left:calc(50% - var(--center-size) / 2 - var(--river-depth) / 2 - 10px); top:var(--play-center); right:auto; bottom:auto; transform:translate(-50%,-50%) rotate(90deg); }
+.river-zone .river.right { left:calc(50% + var(--center-size) / 2 + var(--river-depth) / 2 + 10px); top:var(--play-center); right:auto; bottom:auto; transform:translate(-50%,-50%) rotate(-90deg); }
+.dora-indicators { top:8px; left:12px; transform:none; max-width:160px; flex-wrap:nowrap; background:none; }
+.dora-indicators small { width:auto; font-size:9px; }
+.hand-dock { position:absolute; bottom:5px; left:12px; right:12px; width:auto; height:66px; padding:0; margin:0; border:0; border-radius:0; box-shadow:none; background:none; display:grid; grid-template-columns:minmax(0,1fr) 165px; grid-template-rows:1fr; column-gap:12px; }
+.hand { grid-row:1; grid-column:1; padding-top:8px; padding-bottom:4px; align-items:end; }
+.hand button { max-width:40px; }
+.hand-tools { grid-column:2; grid-row:1; margin:0; gap:3px 6px; align-content:center; }
+.hand-tools button { padding:3px 6px; font-size:11px; }
+.hand-tools .sort-control,.hand-tools .shanten-toggle { color:#edf6f7; font-size:10px; margin:0; }
+.hand-tools label input { width:12px; height:12px; margin:0; }
+#shantenValue { font-size:10px; padding:2px 4px; }
+#gameMessage { position:absolute; width:1px; height:1px; min-height:0; overflow:hidden; clip-path:inset(50%); }
+.melds { position:absolute; bottom:80px; left:12px; width:auto; max-width:22%; max-height:45%; flex-wrap:wrap; overflow:auto; }
+.call-panel { bottom:85px; right:12px; }
+@media (orientation:landscape) and (max-height:600px) {
+ .mahjong-table > * { --hand-space:72px; --center-size:70px; --river-tile:clamp(24px,calc(11dvh - 19px),34px); }
+ .center-score b { font-size:11px; }.center-score.left b,.center-score.right b { font-size:10px; }.score-wind { font-size:9px; }
+ .tablecenter #wall { font-size:16px; }
+ .hand button { max-width:min(40px,9.5dvh); }
+ .seat,.seat.left,.seat.right { width:100px; }
+ .seat strong { font-size:9px; }
+ .seat small { font-size:8px; }
+}
+@media (orientation:portrait) and (max-width:700px) {
+ #game,#game:has(.meld-row) { height:max(100dvh,760px); }
+ .mahjong-table > * { --hand-space:150px; --center-size:76px; --river-tile:24px; }
+ .river-zone .river.left { left:calc(50% - var(--center-size) / 2 - var(--river-depth) / 2 - 6px); }
+ .river-zone .river.right { left:calc(50% + var(--center-size) / 2 + var(--river-depth) / 2 + 6px); }
+ .hand-dock { height:100px; grid-template-columns:1fr; grid-template-rows:auto 1fr; gap:5px; }
+ .hand-tools { grid-column:1; grid-row:1; justify-content:center; }
+ .hand-tools button { width:auto; }.hand { grid-row:2; }
+ .seat.left { top:20%; }.seat.right { top:70%; }.seat.bottom { bottom:150px; }
+ .melds { bottom:115px; }
+}
+/* Offset each river along its edge so the large six-tile rows do not collide at corners. */
+.mahjong-table > * { --river-shift:calc((6 * var(--river-tile) + 14px - var(--center-size)) / 2); }
+.river-zone .river.bottom { left:calc(50% + var(--river-shift)); }
+.river-zone .river.top { left:calc(50% - var(--river-shift)); }
+.river-zone .river.left { top:calc(var(--play-center) + var(--river-shift)); }
+.river-zone .river.right { top:calc(var(--play-center) - var(--river-shift)); }
+.hand-dock { bottom:8px; }
