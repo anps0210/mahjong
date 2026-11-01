@@ -333,3 +333,11 @@ body.in-game { background:radial-gradient(ellipse at center,#658e9e,#416b80); }
 .river-zone .river.left { top:calc(var(--play-center) + var(--river-shift)); }
 .river-zone .river.right { top:calc(var(--play-center) - var(--river-shift)); }
 .hand-dock { bottom:8px; }
+/* Center every river on its side; give the side rivers their own horizontal space. */
+.river-zone .river.bottom,.river-zone .river.top { left:50%; }
+.river-zone .river.left { top:var(--play-center); left:calc(50% - var(--center-size) / 2 - var(--river-depth) / 2 - var(--river-shift) - 10px); }
+.river-zone .river.right { top:var(--play-center); left:calc(50% + var(--center-size) / 2 + var(--river-depth) / 2 + var(--river-shift) + 10px); }
+#waitHelp { color:#fff4bf; font-size:10px; line-height:1.3; width:100%; }
+@media (orientation:portrait) and (max-width:700px) {
+ .mahjong-table > * { --river-tile:20px; }
+}

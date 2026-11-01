@@ -6,7 +6,7 @@ const path = require("path");
 const { chooseDiscard } = require("./bot");
 const { openWindow, winner, applyCall } = require("./calls");
 const { riichiDiscards, declareRiichi, handShanten } = require("./riichi");
-const {evaluateWin,settleWins,endDraw,isFuriten,indicators}=require("./scoring");
+const {evaluateWin,settleWins,endDraw,isFuriten,indicators,waits}=require("./scoring");
 const kongs=require("./kongs");
 
 function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, dealWall = null } = {}) {
@@ -129,6 +129,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     const player = room.players[seat];
 
     io.to(socketId).emit("game:private", {
+      waits: room.started ? waits(player) : [],
       canTsumo: Boolean(room.started && !room.pendingCall && room.turn===seat && evaluateWin(room,seat,{tile:player.drawn})),
       kanOptions: kongs.options(room,seat),
       furiten: room.started ? isFuriten(room,seat) : false,
