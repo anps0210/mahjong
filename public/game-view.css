@@ -229,3 +229,37 @@ body.in-game { background: #b9dad4; color: #163f44; }
 /* Opaque white raster artwork must retain full contrast, including disabled hands. */
 .hand button, .hand button:disabled, .hand button:hover:disabled { opacity:1; filter:none; }
 .tile img { opacity:1; filter:none; mix-blend-mode:normal; background:#ffffff; }
+
+/* Double tile width and height; use the wide table instead of a tiny central ring. */
+.mahjong-table > * { --river-tile:clamp(22px,11cqh,50px); }
+#seats { display:none; }
+.river-zone { position:absolute; width:calc((100% - var(--center-size)) / 2 - 24px); height:calc(50% - 12px); display:flex; flex-direction:column; gap:3px; }
+.river-zone.left { left:10px; top:7px; }
+.river-zone.top { right:10px; top:7px; }
+.river-zone.bottom { left:10px; bottom:7px; }
+.river-zone.right { right:10px; bottom:7px; }
+.river-label { display:flex; align-items:center; gap:8px; height:15px; flex-shrink:0; color:#f3fafc; font-size:11px; }
+.river-label b { color:#fff1b9; }
+.river-label span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.river-zone .river { position:relative; inset:auto; transform:none; width:100%; height:auto; min-height:0; flex:1; max-height:none; grid-template-columns:repeat(9,var(--river-tile)); grid-auto-rows:calc(var(--river-tile) / .7); gap:2px; overflow:auto; scrollbar-width:thin; padding:2px; }
+.river-zone .tile { width:var(--river-tile); }
+.dora-indicators { left:50%; top:8px; transform:translateX(-50%); flex-wrap:wrap; justify-content:center; max-width:var(--center-size); padding:2px; }
+.dora-indicators small { width:100%; text-align:center; font-size:8px; }
+@media (orientation:landscape) and (max-height:600px) {
+ .mahjong-table > * { --river-tile:clamp(18px,11cqh,34px); }
+ .river-label { height:12px; font-size:9px; }
+ .river-zone { gap:2px; height:calc(50% - 5px); }
+ .river-zone.left,.river-zone.top { top:3px; }
+ .river-zone.bottom,.river-zone.right { bottom:3px; }
+ .dora-indicators .tile { width:13px; }
+}
+@media (orientation:portrait) and (max-width:700px) {
+ #game { grid-template-rows:30px auto 800px auto auto auto; }
+ .mahjong-table { min-height:800px; }
+ .mahjong-table > * { --river-tile:34px; }
+ .tablecenter { top:72px; }
+ .dora-indicators { top:130px; max-width:none; flex-wrap:nowrap; }
+ .dora-indicators small { width:auto; }
+ .river-zone { left:10px!important; right:auto!important; bottom:auto!important; width:calc(100% - 20px); height:150px; }
+ .river-zone.top { top:174px; }.river-zone.left { top:330px; }.river-zone.right { top:486px; }.river-zone.bottom { top:642px; }
+}

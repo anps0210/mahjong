@@ -151,7 +151,8 @@ socket.on("room:update", room => {
   roomState = room;
   renderResult(room);
   $("doraIndicators").innerHTML = `<small>도라 표시패</small>${(room.doraIndicators||[]).map(t=>tileFace(t)).join("")}`;
-  if (room.paused || !room.started) { selectedHandIndex = null; renderDiscards(); }
+  if (room.paused || !room.started) selectedHandIndex = null;
+  renderDiscards();
   $("riichiPot").textContent = `공탁 ${(room.riichiPot || 0) * 1000}`;
   renderTurn();
 
@@ -236,7 +237,7 @@ const tileOrder = tile => {
 function tileFace(tile, extra = "") {
   const suit = {"만":"m","통":"p","삭":"s"}[tile.slice(-1)];
   const code = suit ? suit + tile[0] : 'z' + (["동","남","서","북","백","발","중"].indexOf(tile)+1);
-  return `<span class="tile ${extra}" role="img" aria-label="${escapeHtml(tile)}"><img src="/tiles/${code}.png?v=20261101-contrast" alt="" draggable="false"><span class="sr-only">${escapeHtml(tile)}</span></span>`;
+  return `<span class="tile ${extra}" role="img" aria-label="${escapeHtml(tile)}"><img src="/tiles/${code}.png?v=20261101-large-rivers" alt="" draggable="false"><span class="sr-only">${escapeHtml(tile)}</span></span>`;
 }
 function renderHand() {
   const tiles = myHand.map((tile, i) => ({tile, i}));
@@ -270,8 +271,9 @@ function renderDiscards() {
   $("discards").innerHTML = [0,1,2,3].map(offset => {
     const seat = (Math.max(0,mySeat)+offset)%4;
     const tiles = lastDiscards.map((d,i)=>({...d,index:i})).filter(d=>d.seat===seat);
-    return `<div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${selectedHandIndex !== null && d.tile === myHand[selectedHandIndex] ? 'matching-tile' : ''} ${d.riichi ? 'riichi-discard' : ''} ${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div>`;
+    return `<section class="river-zone ${positions[offset]}"><div class="river-label"><b>${winds[seat]}가${seat===mySeat?" · 나":""}</b><span>${escapeHtml(roomState?.players[seat]?.name||"")}${roomState?.players[seat]?.riichi?" · 리치":""}${roomState?.players[seat]?.connected===false?" · 연결 끊김":""}</span></div><div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${selectedHandIndex !== null && d.tile === myHand[selectedHandIndex] ? 'matching-tile' : ''} ${d.riichi ? 'riichi-discard' : ''} ${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div></section>`;
   }).join("");
+  $("discards").querySelectorAll(".river").forEach(river=>{river.scrollTop=river.scrollHeight;});
 }
 function renderCalls() {
   const panel = $("callPanel");
