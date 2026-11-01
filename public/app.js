@@ -236,7 +236,7 @@ const tileOrder = tile => {
 function tileFace(tile, extra = "") {
   const suit = {"만":"m","통":"p","삭":"s"}[tile.slice(-1)];
   const code = suit ? suit + tile[0] : 'z' + (["동","남","서","북","백","발","중"].indexOf(tile)+1);
-  return `<span class="tile ${extra}" role="img" aria-label="${escapeHtml(tile)}"><img src="/tiles/${code}.svg" alt="" draggable="false"><span class="sr-only">${escapeHtml(tile)}</span></span>`;
+  return `<span class="tile ${extra}" role="img" aria-label="${escapeHtml(tile)}"><img src="/tiles/${code}.png?v=20261101-contrast" alt="" draggable="false"><span class="sr-only">${escapeHtml(tile)}</span></span>`;
 }
 function renderHand() {
   const tiles = myHand.map((tile, i) => ({tile, i}));

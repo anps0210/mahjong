@@ -80,6 +80,6 @@
 역·부 계산은 MIT 라이선스의 [@kobalab/majiang-core 1.4.1](https://github.com/kobalab/majiang-core)을 사용합니다. 실제 소켓 화료·깡·동시 론·재접속 및 표준 역별 판정을 `npm test`로 검증합니다.
 
 ## 중앙 점수판과 표준 패 문양
-- 흰 바탕 SVG 34종을 손패·버림패·부로·도라·화료 결과에 공통으로 사용합니다. 만수 한자, 통수 원형 배열, 삭수 대나무와 1삭 새, 자패를 이미지로 고정해 기기 글꼴에 영향을 받지 않습니다. 백은 무늬 없는 흰 패입니다.
+- 순백색 바탕 PNG 34종을 손패·버림패·부로·도라·화료 결과에 공통으로 사용합니다. 만수 한자, 통수 원형 배열, 삭수 대나무와 1삭 새, 자패를 이미지로 고정해 기기 글꼴에 영향을 받지 않습니다. 백은 무늬 없는 흰 패입니다.
 - 자신의 자리가 항상 중앙 점수판 아래쪽이며, 네 명의 점수는 중앙에 모아 표시합니다. 현재 차례의 점수 칸과 중앙 차례 문구를 함께 강조합니다. 외곽에는 이름·리치·연결 상태만 표시합니다.
-- 패 이미지 생성 도구는 `scripts/generate-tiles.py`입니다. 재생성에 Python fontTools와 Noto Serif CJK가 필요하며, 서버 실행에는 필요하지 않습니다. 글자 윤곽의 Noto 라이선스는 `public/tiles/LICENSE.txt`에 포함했습니다.
+- 패 원본 생성 도구는 `scripts/generate-tiles.py`, PNG 출력 도구는 `scripts/rasterize-tiles.cjs`입니다. 재생성에 Python fontTools·Noto Serif CJK·Playwright Chromium이 필요하며, 서버 실행에는 필요하지 않습니다. 만수는 검정, 통수는 검정·빨강, 삭수는 진한 녹색·빨강을 사용합니다. 불투명 PNG로 제공해 강제 다크 모드의 SVG 문양 재색칠을 줄입니다. 글자 윤곽의 Noto 라이선스는 `public/tiles/LICENSE.txt`에 포함했습니다.
