@@ -225,3 +225,7 @@ body.in-game { background: #b9dad4; color: #163f44; }
   .score-wind { font-size:11px; }
   #centerTurn { font-size:10px; }.tablecenter #wall { font-size:9px; }.tablecenter #riichiPot { font-size:8px; }
 }
+
+/* Opaque white raster artwork must retain full contrast, including disabled hands. */
+.hand button, .hand button:disabled, .hand button:hover:disabled { opacity:1; filter:none; }
+.tile img { opacity:1; filter:none; mix-blend-mode:normal; background:#ffffff; }
