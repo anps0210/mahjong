@@ -1,5 +1,5 @@
 const { randomUUID } = require('crypto');
-const { evaluateWin } = require('./scoring');
+const { evaluateWin, waits } = require('./scoring');
 const { replacement } = require('./kongs');
 function optionsFor(hand, tile, seat, from, canKan) {
   const options=[];
@@ -32,6 +32,9 @@ function openWindow(room, from, tile) {
     if(seat===from) return;
     const choices= !p.riichi && room.wall.length ? optionsFor(p.hand,tile,seat,from,(room.kanCount||0)<4 && room.deadWall.length>0) : [];
     if(evaluateWin(room,seat,{tile,from})) choices.unshift({id:"ron",type:"ron",consume:[],banned:[]});
+    // Even an otherwise complete hand without a yaku creates same-turn furiten.
+    // No ron button is offered, but a later houtei/chankan must not bypass it.
+    if(!choices.some(o=>o.type==='ron') && waits(p).includes(tile)) p.temporaryFuriten=true;
     if(choices.length) offers[seat]=choices;
   });
   if(!Object.keys(offers).length) return null;

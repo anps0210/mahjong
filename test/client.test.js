@@ -54,6 +54,10 @@ test("actual page restores a refreshed player, disables offline actions and resu
   assert.equal(element(guests[0], "start").disabled, true);
   element(host, "start").click();
   await until(() => !element(host, "game").classList.contains("hidden"));
+  assert.equal(host.window.document.querySelectorAll('.center-score').length,4);
+  assert.equal(host.window.document.querySelector('.center-score.bottom.active').dataset.seat,'0');
+  assert.equal(guests[0].window.document.querySelector('.center-score.bottom').dataset.seat,'1');
+  assert.equal(element(host,'centerTurn').textContent,'동 차례');
   const hand = element(host, "hand").textContent;
   assert.equal(element(host, "hand").querySelectorAll("button").length, 14);
 
@@ -75,6 +79,8 @@ test("actual page restores a refreshed player, disables offline actions and resu
   // Reconnect the same page: its connect handler must restore the room itself.
   const guest = guests[0];
   await until(() => element(guest, "turnText").textContent === "내 차례");
+  assert.equal(guest.window.document.querySelector('.center-score.bottom.active').dataset.seat,'1');
+  assert.equal(element(guest,'centerTurn').textContent,'남 차례');
   const guestHand = element(guest, "hand").textContent;
   guest.window.eval("socket.disconnect()");
   await until(() => element(refreshed, "connectionStatus").textContent.includes("일시 정지"));

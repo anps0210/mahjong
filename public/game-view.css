@@ -148,3 +148,80 @@ body.in-game { background: #b9dad4; color: #163f44; }
 }
 
 .dora-indicators{position:absolute;z-index:4;left:12px;top:8px;display:flex;gap:3px;align-items:center;color:#234c3f}.dora-indicators small{font-size:10px}.dora-indicators .tile{width:18px}.dora-indicators .tile b,.dora-indicators .tile em{font-size:13px}.dora-indicators .tile small{display:none}#tsumoButton{background:#ffdf8a;color:#673c13;border:2px solid #ae7825}#selfKanActions{display:flex;gap:3px;flex-wrap:wrap}#selfKanActions button{font-size:11px;padding:3px 7px}#furitenBadge{font-size:11px;color:#922d25}.round-result{padding:18px;margin-bottom:24px;background:#eff5de;color:#244b3c;border:2px solid #c9a85c;border-radius:12px}.round-result h3{font-size:17px;margin:8px 0}.winner-result{padding:12px 0;border-bottom:1px solid #9ebba2}.winner-result ul{display:flex;flex-wrap:wrap;gap:6px 18px;padding-left:18px;font-size:13px}.winning-hand{display:flex;gap:3px;flex-wrap:wrap;margin:10px 0}.winning-hand .tile{width:30px}.winning-hand .tile b,.winning-hand .tile em{font-size:20px}.result-meld{display:flex;gap:2px;margin-left:8px}.result-scores{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}.result-scores>div{display:flex;flex-direction:column;gap:3px;background:#dcebd5;padding:10px;border-radius:7px}.gain{color:#146d49}.loss{color:#ad352d}@media(orientation:landscape) and (max-height:600px){.hand-tools:has(#tsumoButton:not(.hidden)){gap:2px}.hand-tools:has(#selfKanActions button){gap:2px}.dora-indicators{top:5px;left:8px}.dora-indicators .tile{width:14px}.dora-indicators .tile b,.dora-indicators .tile em{font-size:10px}.dora-indicators small{font-size:9px}}
+
+/* Standard white tile faces are image assets, independent of device fonts. */
+:root { color-scheme: only light; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.tile { padding:0; background:#fff; border-color:#d3d4cf; border-radius:4px; box-shadow:0 3px 0 #c3ac6a,1px 4px 3px #183d4438; isolation:isolate; color-scheme:only light; forced-color-adjust:none; }
+.tile img { display:block; width:100%; height:100%; aspect-ratio:.7; object-fit:contain; pointer-events:none; user-select:none; }
+.hand .tile { background:#fff; box-shadow:0 4px 0 #bea563,0 6px 5px #173b4333; }
+.hand button.selected-tile .tile { background:#fff; }
+.hand button.selected-tile .tile::before, .river .tile.matching-tile::before { content:""; position:absolute; inset:0; z-index:1; pointer-events:none; background:#db9c2640; }
+.river .tile.matching-tile::before { background:#86510b66; }
+.river .tile { padding:0; }
+/* All score values live on the central compass; outer badges identify players. */
+.mahjong-table { container-type:size; background:radial-gradient(ellipse at center,#6d9aa8,#426f83); border-color:#698a90; box-shadow:inset 0 0 0 2px #bad5d6,inset 0 0 65px #1c40582b,0 3px 10px #24434c30; }
+.mahjong-table > * { --center-size:clamp(80px,40cqh,164px); --river-tile:clamp(11px,5.5cqh,25px); --river-depth:calc(3 * var(--river-tile) / .7 + 4px); }
+.table-grain { border-color:#c1e0e740; }
+.tablecenter { width:var(--center-size); height:var(--center-size); padding:0; aspect-ratio:1; border:2px solid #c8b97f; border-radius:9px; background:linear-gradient(135deg,#31474f,#1c303c); box-shadow:0 4px 0 #172b34,0 6px 12px #17323c55; z-index:3; overflow:visible; }
+#centerScores { position:absolute; inset:0; }
+.center-score { position:absolute; display:flex; align-items:center; justify-content:center; gap:4px; width:78%; height:21%; color:#f3e8ba; background:#203541; border:1px solid #536675; border-radius:4px; font-variant-numeric:tabular-nums; line-height:1; }
+.center-score b { font-size:clamp(11px,5.7cqh,21px); letter-spacing:-.4px; }
+.score-wind { font-size:clamp(9px,4.5cqh,15px); font-weight:800; color:#b4c9d3; }
+.center-score.bottom { bottom:-2px; left:50%; transform:translateX(-50%); }
+.center-score.top { top:-2px; left:50%; transform:translateX(-50%); }
+.center-score.left { left:10%; top:50%; transform:translate(-50%,-50%) rotate(90deg); width:55%; }
+.center-score.right { right:10%; top:50%; transform:translate(50%,-50%) rotate(-90deg); width:55%; }
+.center-score.left b,.center-score.right b { font-size:clamp(10px,5.1cqh,18px); }
+.center-score.active { z-index:2; background:#ffdf7d; color:#26343d; border-color:#ffedac; box-shadow:0 0 0 2px #e7b83d,0 0 15px #ffcf4d8c; }
+.center-score.active .score-wind { color:#794c0e; }
+.center-score.active::after { content:""; position:absolute; bottom:-4px; left:35%; width:30%; height:3px; border-radius:4px; background:#fff2af; }
+.score-riichi { position:absolute; right:2px; bottom:2px; width:4px; height:4px; border-radius:50%; background:#e13b40; }
+.center-info { position:absolute; inset:25% 22%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; color:#dbecec; white-space:nowrap; }
+#centerTurn { font-weight:800; font-size:clamp(8px,3.8cqh,13px); color:#ffe397; }
+#centerTurn.is-mine { color:#fff2b8; }
+.tablecenter #wall { font-size:clamp(7px,3.4cqh,12px); color:#e4eeee; }
+.tablecenter #riichiPot { display:block; font-size:clamp(6px,3cqh,10px); color:#a6c3cb; letter-spacing:0; }
+.tablecenter.is-paused { opacity:.75; }
+.seat,.seat.left,.seat.right { width:130px; padding:5px 8px; gap:6px; min-height:36px; flex-direction:row; text-align:left; border-color:#aac8d080; background:#eaf2efed; box-shadow:none; }
+.seat.bottom { left:2%; bottom:4%; top:auto; right:auto; transform:none; }
+.seat.top { right:2%; top:4%; bottom:auto; left:auto; transform:none; }
+.seat.left { left:2%; top:32%; right:auto; bottom:auto; }
+.seat.right { right:2%; top:55%; left:auto; bottom:auto; }
+.seat strong { color:#24434d; font-size:11px; max-width:96px; }
+.seat small,.seat small:last-child { font-size:9px; font-weight:400; color:#49666c; }
+.seat small:empty { display:none; }
+.seat.active { background:#fff3ce; border-color:#d9b554; box-shadow:none; }
+.seat .wind-badge { width:22px; height:25px; font-size:17px; background:transparent; color:#3d6169; }
+.river { width:calc(6 * var(--river-tile) + 10px); height:var(--river-depth); min-height:0; max-height:none; gap:2px; grid-template-columns:repeat(6,var(--river-tile)); grid-auto-rows:calc(var(--river-tile) / .7); overflow-y:auto; overflow-x:visible; scrollbar-width:none; }
+.river.bottom { left:50%; top:calc(50% + var(--center-size) / 2 + 7px); bottom:auto; transform:translateX(-50%); }
+.river.top { left:50%; bottom:calc(50% + var(--center-size) / 2 + 7px); top:auto; transform:translateX(-50%) rotate(180deg); }
+.river.left { left:calc(50% - var(--center-size) / 2 - var(--river-depth) / 2 - 7px); right:auto; top:50%; bottom:auto; transform:translate(-50%,-50%) rotate(90deg); }
+.river.right { left:calc(50% + var(--center-size) / 2 + var(--river-depth) / 2 + 7px); right:auto; top:50%; bottom:auto; transform:translate(-50%,-50%) rotate(-90deg); }
+.dora-indicators { padding:3px 5px; border-radius:4px; color:#e3eff0; background:#294b5d70; }
+.dora-indicators .tile { width:20px; }
+@media (orientation:landscape) and (max-height:600px) {
+  #game { grid-template-rows:24px minmax(190px,1fr) auto auto 14px; }
+  #game:has(.meld-row) { grid-template-rows:24px minmax(160px,1fr) auto auto 14px; }
+  .mahjong-table > * { --center-size:clamp(68px,40cqh,118px); --river-tile:clamp(9px,5.5cqh,17px); }
+  .center-score { gap:2px; }
+  .center-score b { font-size:clamp(10px,5.7cqh,16px); }
+  .center-score.left b,.center-score.right b { font-size:clamp(9px,5.1cqh,14px); }
+  .seat,.seat.left,.seat.right { width:104px; min-height:29px; padding:3px 5px; gap:3px; }
+  .seat strong { font-size:9px; max-width:76px; }
+  .seat small,.seat small:last-child { font-size:8px; }
+  .seat .wind-badge { font-size:14px; width:18px; height:20px; }
+  .dora-indicators .tile { width:15px; }
+  .hand button { max-width:min(40px,9.5dvh); }
+  .hand .tile { aspect-ratio:.7; }
+}
+@media (orientation:portrait) and (max-width:700px) {
+  .mahjong-table > * { --center-size:104px; --river-tile:17px; }
+  .seat,.seat.left,.seat.right { width:92px; }
+  .seat.left { top:24%; }.seat.right { top:67%; }
+  .seat strong { max-width:65px; font-size:9px; }
+  .center-score b { font-size:14px; }
+  .center-score.left b,.center-score.right b { font-size:12px; }
+  .score-wind { font-size:11px; }
+  #centerTurn { font-size:10px; }.tablecenter #wall { font-size:9px; }.tablecenter #riichiPot { font-size:8px; }
+}

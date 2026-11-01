@@ -94,3 +94,12 @@ test('only kokushi may rob a concealed kan; riichi declaration deposit is refund
  const f=fixture('m123456p55789s234',{win:'s4',pot:1});f.room.players[0].score=24000;f.room.players[0].riichi=true;f.room.discards=[{seat:0,tile:'4삭',riichi:true}];
  assert.ok(settleWins(f.room,[1],f.ctx));assert.equal(f.room.result.pot,0);assert.equal(f.room.players.reduce((n,p)=>n+p.score,0),100000);assert.equal(f.room.players[0].riichi,false);
 });
+
+test('passing a complete no-yaku hand causes temporary furiten before a later houtei',()=>{
+ const f=fixture('m456p789s11234',{win:'s4',melds:[{type:'chi',tiles:'m123',called:'m1',from:0}]});
+ f.room.deadWall=Array(14).fill('동');f.room.discards=[{seat:0,tile:'4삭'}];
+ require('../calls').openWindow(f.room,0,'4삭');
+ assert.equal(f.room.players[1].temporaryFuriten,true);
+ f.room.wall=[];assert.equal(evaluateWin(f.room,1,f.ctx),null);
+ f.room.players[1].temporaryFuriten=false;assert.ok(evaluateWin(f.room,1,f.ctx).yaku.some(y=>y.name==='하저로어'));
+});

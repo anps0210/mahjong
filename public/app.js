@@ -152,7 +152,7 @@ socket.on("room:update", room => {
   renderResult(room);
   $("doraIndicators").innerHTML = `<small>도라 표시패</small>${(room.doraIndicators||[]).map(t=>tileFace(t)).join("")}`;
   if (room.paused || !room.started) { selectedHandIndex = null; renderDiscards(); }
-  $("riichiPot").textContent = `供託 · ${(room.riichiPot || 0) * 1000}점`;
+  $("riichiPot").textContent = `공탁 ${(room.riichiPot || 0) * 1000}`;
   renderTurn();
 
   $("count").textContent =
@@ -205,7 +205,7 @@ socket.on("game:private", s => {
   lastDiscards = s.discards || [];
 
   $("wall").textContent =
-    `남은 패 ${s.wallCount}개`;
+    `잔여 ${s.wallCount}패`;
 
   renderCalls();
   renderMelds();
@@ -234,16 +234,9 @@ const tileOrder = tile => {
   return suit < 0 ? 30 + ["동", "남", "서", "북", "백", "발", "중"].indexOf(tile) : suit * 10 + Number(tile[0]);
 };
 function tileFace(tile, extra = "") {
-  const suit = tile.slice(-1);
-  const kind = { "만": "man", "통": "pin", "삭": "sou", "중": "red", "발": "green", "백": "white" }[suit] || "honor";
-  const number = Number(tile[0]);
-  let face;
-  if (number && (suit === "통" || suit === "삭")) {
-    const points = number === 1 ? [[30,30]] : Array.from({length:number}, (_,i) => [18 + (i%3)*12, 15 + Math.floor(i/3)*15]);
-    face = `<svg viewBox="0 0 60 60" aria-hidden="true">${points.map(([x,y],i) => suit === "통" ? `<circle cx="${x}" cy="${y}" r="${number===1?16:5}" fill="none" stroke="${i%3===1?'#b83735':'#235e84'}" stroke-width="3"/><circle cx="${x}" cy="${y}" r="2" fill="#235e84"/>` : `<path d="M${x} ${y-5}v10m-3-7h6m-6 4h6" stroke="#23734f" stroke-width="3" stroke-linecap="round"/>`).join("")}</svg><small>${tile}</small>`;
-  } else if (number) face = `<b>${["","一","二","三","四","五","六","七","八","九"][number]}</b><em>萬</em>`;
-  else face = `<b>${{"동":"東","남":"南","서":"西","북":"北","백":"","발":"發","중":"中"}[tile]}</b><small>${tile}</small>`;
-  return `<span class="tile ${kind} ${extra}" aria-label="${tile}">${face}</span>`;
+  const suit = {"만":"m","통":"p","삭":"s"}[tile.slice(-1)];
+  const code = suit ? suit + tile[0] : 'z' + (["동","남","서","북","백","발","중"].indexOf(tile)+1);
+  return `<span class="tile ${extra}" role="img" aria-label="${escapeHtml(tile)}"><img src="/tiles/${code}.svg" alt="" draggable="false"><span class="sr-only">${escapeHtml(tile)}</span></span>`;
 }
 function renderHand() {
   const tiles = myHand.map((tile, i) => ({tile, i}));
@@ -330,11 +323,19 @@ function renderTurn() {
   $("turnText").textContent = roomState?.paused ? "복귀 대기" : waitingCall ? "론·부로 선택 중" : currentTurn === mySeat ? "내 차례" : `플레이어 ${currentTurn + 1} 차례`;
   $("turnText").classList.toggle("my-turn",currentTurn===mySeat && !roomState?.paused && !waitingCall);
   $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "론·치·퐁·깡 또는 스킵을 선택하세요" : selectedHandIndex !== null ? `${myHand[selectedHandIndex]} · 한 번 더 누르면 ${choosingRiichi ? "리치 선언" : "버립니다"}` : choosingRiichi ? "강조된 패를 두 번 눌러 리치하세요" : ownRiichi && currentTurn===mySeat ? "쯔모패를 두 번 눌러 버리세요" : currentTurn===mySeat ? "한 번 선택 · 다시 눌러 버리기" : "다른 플레이어의 차례입니다";
-  $("seats").innerHTML = [0,1,2,3].map(offset => {
-    const i=(Math.max(0,mySeat)+offset)%4;
-    const p=roomState?.players[i];
-    return `<div class="seat ${positions[offset]} ${i===currentTurn?'active':''} ${p && !p.connected?'offline':''}"><span class="wind-badge">${winds[i]}</span><div><strong>${escapeHtml(p?.name || `플레이어 ${i+1}`)}${p?.bot?' · 봇':i===mySeat?' · 나':''}</strong><small>${p?.riichi?'리치 · ':''}${p && !p.connected?'연결 끊김':i===currentTurn?'● 현재 차례':'대기 중'}</small><small>${(p?.score ?? 25000).toLocaleString()}점</small></div></div>`;
+  const seatOrder = [0,1,2,3].map(offset => ({seat:(Math.max(0,mySeat)+offset)%4,position:positions[offset]}));
+  $("seats").innerHTML = seatOrder.map(({seat,position}) => {
+    const p=roomState?.players[seat];
+    return `<div class="seat ${position} ${seat===currentTurn?'active':''} ${p && !p.connected?'offline':''}"><span class="wind-badge">${winds[seat]}</span><div><strong>${escapeHtml(p?.name || `플레이어 ${seat+1}`)}${p?.bot?' · 봇':seat===mySeat?' · 나':''}</strong><small>${p && !p.connected?'연결 끊김':p?.riichi?'리치':seat===mySeat?'내 자리':''}</small></div></div>`;
   }).join("");
+  $("centerScores").innerHTML = seatOrder.map(({seat,position}) => {
+    const p=roomState?.players[seat];
+    const active=seat===currentTurn&&!roomState?.paused;
+    return `<div class="center-score ${position} ${active?'active':''}" data-seat="${seat}" ${active?'aria-current="true"':''} aria-label="${winds[seat]}가 ${escapeHtml(p?.name||'')} ${(p?.score??25000).toLocaleString()}점${active?' 현재 차례':''}"><span class="score-wind">${winds[seat]}</span><b>${(p?.score??25000).toLocaleString()}</b>${p?.riichi?'<i class="score-riichi" title="리치"></i>':''}</div>`;
+  }).join("");
+  $("centerTurn").textContent=roomState?.paused?'복귀 대기':waitingCall?'론·부로 선택':`${winds[currentTurn]} 차례`;
+  $("centerTurn").classList.toggle("is-mine",currentTurn===mySeat&&!waitingCall&&!roomState?.paused);
+  $("centerBoard").classList.toggle("is-paused",Boolean(roomState?.paused));
 }
 
 function escapeHtml(s) {
