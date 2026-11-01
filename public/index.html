@@ -2,10 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>雀 ROOM - 온라인 마작</title>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="game-view.css">
+<link rel="stylesheet" href="game-view.css?v=20261101">
 </head>
 <body>
 <main class="shell">
@@ -53,7 +54,7 @@
 <div id="doraIndicators" class="dora-indicators" aria-label="도라 표시패"></div>
 <div id="seats" class="seats"></div>
 <div id="discards" class="discards"></div>
-<div class="tablecenter"><span class="tablelabel">雀 ROOM</span><strong>四人麻雀</strong><span id="wall"></span><span id="riichiPot" class="center-caption"></span><span class="center-caption">동 · 남 · 서 · 북</span></div>
+<div id="centerBoard" class="tablecenter" aria-label="중앙 점수판"><div id="centerScores"></div><div class="center-info"><span id="centerTurn" role="status" aria-live="polite"></span><span id="wall"></span><span id="riichiPot" class="center-caption"></span></div></div>
 </div>
 <div id="callPanel" class="call-panel hidden" role="region" aria-label="부로 선택"></div>
 <div id="melds" class="melds" aria-label="공개된 부로"></div>
@@ -64,6 +65,6 @@
 <footer>Mahjong Room · 실시간 방/턴 동기화 데모</footer>
 </main>
 <script src="/socket.io/socket.io.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=20261101"></script>
 </body>
 </html>
