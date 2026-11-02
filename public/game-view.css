@@ -359,3 +359,37 @@ body.in-game { background:radial-gradient(ellipse at center,#658e9e,#416b80); }
 @media (orientation:portrait) and (max-width:700px) {
  .mahjong-table > * { --center-size:114px; }
 }
+
+/* One shared tilted surface keeps all four rivers and the scoreboard in perspective. */
+body.in-game { background:#101b29; }
+.table-plane {
+ position:absolute; left:50%; top:calc((100% - 72px) / 2);
+ width:94vw; height:116dvh;
+ --river-tile:clamp(24px,calc(11dvh - 19px),38px);
+ --center-size:calc(6 * var(--river-tile) + 14px);
+ --play-center:50%; --river-depth:calc(3 * var(--river-tile) / .7 + 8px);
+ transform:translate(-50%,-50%) perspective(1000px) rotateX(30deg) scale(.84);
+ transform-origin:50% 50%;
+ background:radial-gradient(ellipse at center,#3d628e,#203955);
+ border:14px solid #674438; border-radius:16px;
+ box-shadow:inset 0 0 0 3px #b28a54,inset 0 0 100px #101f3b66,0 12px 0 #30241f,0 18px 40px #0008;
+}
+.table-plane .table-grain { display:block; position:absolute; inset:7%; border:2px solid #9ab5d332; border-radius:12px; }
+.table-plane .tablecenter { width:var(--center-size); height:var(--center-size); top:50%; border:4px solid #80879c; border-radius:12px; background:linear-gradient(135deg,#41465b,#252c3e); box-shadow:0 5px 0 #111827,0 8px 12px #0006; }
+.table-plane .river-zone .river.top,.table-plane .river-zone .river.bottom { left:50%; }
+.table-plane .river-zone .river.left { left:calc(50% - var(--center-size) / 2 - var(--river-depth) / 2 - 6px); top:50%; }
+.table-plane .river-zone .river.right { left:calc(50% + var(--center-size) / 2 + var(--river-depth) / 2 + 6px); top:50%; }
+.table-plane .tile { box-shadow:0 4px 0 #ca9e47,0 5px 2px #11213677; }
+.table-plane .center-score { height:20%; }
+.table-plane .center-score b { font-size:clamp(18px,3.6dvh,25px); }
+.table-plane .center-score.left b,.table-plane .center-score.right b { font-size:clamp(16px,3.2dvh,23px); }
+.table-plane .score-wind { font-size:15px; }
+.table-plane #centerTurn { font-size:14px; }
+.table-plane #wall { font-size:clamp(24px,5dvh,34px); }
+.table-plane #riichiPot { font-size:12px; }
+.seat { z-index:5; }
+.hand-dock { z-index:6; }
+@media (orientation:portrait) and (max-width:700px) {
+ .table-plane { width:130vw; height:90dvh; transform:translate(-50%,-50%) perspective(1000px) rotateX(28deg) scale(.64); --river-tile:24px; }
+}
+#seats,.table-plane .table-grain { pointer-events:none; }
