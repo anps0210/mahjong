@@ -278,11 +278,30 @@ function renderHand() {
 }
 $("sortHand").onchange = () => { selectedHandIndex = null; renderHand(); renderDiscards(); renderTurn(); };
 function renderDiscards() {
-  $("discards").innerHTML = [0,1,2,3].map(offset => {
+  const riverMarkup = [0,1,2,3].map(offset => {
     const seat = (Math.max(0,mySeat)+offset)%4;
     const tiles = lastDiscards.map((d,i)=>({...d,index:i})).filter(d=>d.seat===seat);
     return `<section class="river-zone ${positions[offset]}"><div class="river-label"><b>${winds[seat]}가${seat===mySeat?" · 나":""}</b><span>${escapeHtml(roomState?.players[seat]?.name||"")}${roomState?.players[seat]?.riichi?" · 리치":""}${roomState?.players[seat]?.connected===false?" · 연결 끊김":""}</span></div><div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${selectedHandIndex !== null && d.tile === myHand[selectedHandIndex] ? 'matching-tile' : ''} ${d.riichi ? 'riichi-discard' : ''} ${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div></section>`;
   }).join("");
+  if(renderDiscards.lastMarkup===riverMarkup)return;
+  renderDiscards.lastMarkup=riverMarkup;
+  // Preserve existing 3D tile elements; only append or update changed discards.
+  const template=document.createElement('template');template.innerHTML=riverMarkup;
+  if($("discards").children.length!==4) $("discards").replaceChildren(template.content.cloneNode(true));
+  else [...template.content.children].forEach((fresh,i)=>{
+    const existing=$("discards").children[i];
+    const label=existing.querySelector('.river-label'),nextLabel=fresh.querySelector('.river-label');
+    if(label.innerHTML!==nextLabel.innerHTML)label.innerHTML=nextLabel.innerHTML;
+    const river=existing.querySelector('.river'),next=fresh.querySelector('.river');
+    river.setAttribute('aria-label',next.getAttribute('aria-label'));
+    while(river.children.length>next.children.length)river.lastElementChild.remove();
+    [...next.children].forEach((tile,j)=>{
+      const current=river.children[j];
+      if(!current)river.append(tile.cloneNode(true));
+      else if(current.getAttribute('aria-label')!==tile.getAttribute('aria-label'))current.replaceWith(tile.cloneNode(true));
+      else if(current.className!==tile.className)current.className=tile.className;
+    });
+  });
   $("discards").querySelectorAll(".river").forEach(river=>{river.scrollTop=river.scrollHeight;});
 }
 function renderCalls() {

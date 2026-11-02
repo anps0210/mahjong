@@ -5,44 +5,23 @@ function countsOf(hand) {
   return counts;
 }
 // Closed-hand distance to completion: standard hands, seven pairs and orphans.
+const Majiang = require('@kobalab/majiang-core');
+const shantenCache = new Map();
 function shanten(counts, openMelds = 0) {
-  let best = 8;
-  function visit(start, melds, pairs, partials) {
-    while (start < 34 && !counts[start]) start++;
-    if (start === 34) {
-      best = Math.min(best, 8 - melds*2 - Math.min(partials,4-melds) - pairs);
-      return;
-    }
-    const n = counts[start];
-    if (n >= 3) { counts[start]-=3; visit(start,melds+1,pairs,partials); counts[start]+=3; }
-    const suited = start < 27 && start%9 < 7;
-    if (suited && counts[start+1] && counts[start+2]) {
-      counts[start]--;counts[start+1]--;counts[start+2]--;
-      visit(start,melds+1,pairs,partials);
-      counts[start]++;counts[start+1]++;counts[start+2]++;
-    }
-    if (n>=2) {
-      counts[start]-=2;
-      if (!pairs) visit(start,melds,1,partials);
-      visit(start,melds,pairs,partials+1);
-      counts[start]+=2;
-    }
-    for (const gap of [1,2]) {
-      if (start<27 && start%9+gap<9 && counts[start+gap]) {
-        counts[start]--;counts[start+gap]--;
-        visit(start,melds,pairs,partials+1);
-        counts[start]++;counts[start+gap]++;
-      }
-    }
-    counts[start]--; visit(start,melds,pairs,partials); counts[start]++;
-  }
-  visit(0,openMelds,0,0);
-  if (openMelds) return best;
-  const unique = counts.filter(Boolean).length;
-  const pairs = counts.filter(n=>n>=2).length;
-  const orphans = [0,8,9,17,18,26,27,28,29,30,31,32,33];
-  return Math.min(best,6-pairs+Math.max(0,7-unique),13-orphans.filter(i=>counts[i]).length-Number(orphans.some(i=>counts[i]>=2)));
+  const key = openMelds + ':' + counts.join('');
+  if (shantenCache.has(key)) return shantenCache.get(key);
+  const hand = [];
+  counts.forEach((n,i)=>{ for(let k=0;k<n;k++) hand.push(i<27?'mps'[Math.floor(i/9)]+(i%9+1):'z'+(i-26)); });
+  const shape = new Majiang.Shoupai(hand);
+  // The pinned core's xiangting uses only _fulou.length, not meld tile identities.
+  // These placeholders represent the already-completed groups outside counts.
+  shape._fulou = Array(openMelds).fill('z111+');
+  const result = Majiang.Util.xiangting(shape);
+  if(shantenCache.size>=20000) shantenCache.clear();
+  shantenCache.set(key,result);
+  return result;
 }
+
 function chooseDiscard(hand, discards = []) {
   if (!hand.length) throw new Error('Bot hand is empty');
   const counts = countsOf(hand);
