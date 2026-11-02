@@ -471,3 +471,15 @@ body.in-game { background:#101b29; }
 .table-plane .river .tile img { pointer-events:auto; }
 .table-plane .river.bottom .tile,.table-plane .river.top .tile,
 .table-plane .river.left .tile,.table-plane .river.right .tile { box-shadow:0 2px 5px #08132166; }
+#waitButton { top:auto; bottom:calc(50% + 18px); }
+#waitPreview { top:54%; max-height:72dvh; max-width:min(85vw,560px); }
+.wait-yaku { border-top:1px solid #657084; padding-top:7px; margin-top:7px; font-size:12px; }
+.wait-yaku>div { display:flex; flex-wrap:wrap; gap:5px; margin:5px 0 8px; }
+.wait-yaku>div>span { padding:4px 7px; border-radius:5px; border:1px solid currentColor; }
+.yaku-guaranteed { color:#c4f48d; background:#37592b55; }
+.yaku-possible { color:#bac0c8; background:#4b526055; }
+.wait-yaku span small { display:block; font-size:9px; max-width:230px; color:inherit!important; }
+.wait-yaku p { margin:6px 0; }
+#waitPreview { pointer-events:auto; }
+/* Reserve the rightmost strip for the held help button, even with many chi choices. */
+.call-panel { right:70px; max-width:calc(100% - 82px); }

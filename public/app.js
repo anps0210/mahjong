@@ -210,11 +210,11 @@ socket.on("game:private", s => {
     `X ${s.wallCount}`;
 
   $("wall").setAttribute("aria-label", `남은 패 ${s.wallCount}장`);
-  hideWaitPreview();
   const details=s.waitDetails||[];
+  if(!details.length) hideWaitPreview();
   $("waitButton").classList.toggle("hidden", !details.length);
   $("waitHelp").textContent='';
-  $("waitPreview").innerHTML=`<strong>대기패${s.furiten?' · 후리텐':''}</strong><div class="wait-tiles">${details.map(d=>`<div>${tileFace(d.tile)}<b>${d.remaining}장</b></div>`).join('')}</div><small>보이지 않는 패 기준 · 상대 손패와 왕패에도 있을 수 있어요</small>`;
+  $("waitPreview").innerHTML=`<strong>대기패${s.furiten?' · 후리텐':''}</strong><div class="wait-tiles">${details.map(d=>`<div>${tileFace(d.tile)}<b>${d.remaining}장</b></div>`).join('')}</div>${renderWaitYaku(s.waitYaku)}<small>장수는 보이지 않는 패 기준 · 상대 손패·왕패 포함</small>`;
   renderCalls();
   renderMelds();
   renderHand();
@@ -494,3 +494,11 @@ $("waitButton").addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('blur',hideWaitPreview);
 document.addEventListener('visibilitychange',hideWaitPreview);
 socket.on('disconnect',hideWaitPreview);
+
+
+function renderWaitYaku(guide){
+ if(!guide)return '';
+ const value=y=>y?.yakuman?`${y.yakuman}배 역만`:`${y?.han||0}판`;
+ const list=(entries,kind)=>entries.length?entries.map(y=>`<span class="yaku-${kind}" title="${escapeHtml(y.condition||'모든 대기패의 일반 론·쯔모에서 성립')}">${escapeHtml(y.name)} <b>${value(y)}</b>${y.condition?`<small>${escapeHtml(y.condition)}</small>`:''}</span>`).join(''):'<span class="yaku-possible">없음</span>';
+ return `<div class="wait-yaku">${guide.afterDraw?'<p>쯔모패를 버리고 현재 대기를 유지할 경우</p>':''}<strong>확정 역</strong><div>${list(guide.guaranteed,'guaranteed')}</div><strong>가능 역</strong><div>${list(guide.possible,'possible')}</div><p>${guide.totals.map(t=>`${escapeHtml(t.tile)}: 론 ${t.ron?.han||t.ron?.yakuman?value(t.ron):'역 없음'} · 쯔모 ${t.tsumo?.han||t.tsumo?.yakuman?value(t.tsumo):'역 없음'}`).join('<br>')}</p><small>현재 대기형의 일반 화료 기준 · 도라·우라도라·특수상황 역은 합계 제외<br>후리텐이면 론 불가. 가능한 역은 조건 충족 시에만 추가됩니다.</small></div>`;
+}

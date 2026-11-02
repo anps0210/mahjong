@@ -112,3 +112,17 @@ test('wait counts use visible tiles without double counting called discards or h
  assert.equal(details().remaining,1);
  f.room.doraIndicators=['4삭'];assert.equal(details().remaining,0);
 });
+test('wait guide distinguishes guaranteed riichi/pinfu from conditional tsumo and ignores hidden ura',()=>{
+ const f=fixture('m123456p55789s234',{win:'s4',riichi:true,ura:'m9'});
+ const guide=require('../scoring').waitYakuGuide(f.room,1);
+ assert.ok(guide.guaranteed.some(y=>y.name==='리치'&&y.han===1));
+ assert.ok(guide.guaranteed.some(y=>y.name==='핑후'));
+ assert.ok(guide.possible.some(y=>y.name==='멘젠쯔모'&&y.han===1));
+ assert.ok(!JSON.stringify(guide).includes('우라도라'));
+ const before=structuredClone(f.room);
+ require('../scoring').waitYakuGuide(f.room,1);assert.deepEqual(f.room,before);
+ f.room.players[1].drawn='중';f.room.players[1].hand.push('중');
+ const after=require('../scoring').waitYakuGuide(f.room,1);
+ assert.equal(after.afterDraw,true);assert.deepEqual(after.totals,guide.totals);
+ assert.ok(require('../scoring').waitDetails(f.room,1).length);
+});

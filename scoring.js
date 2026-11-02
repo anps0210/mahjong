@@ -89,6 +89,36 @@ function waitDetails(room,seat){
  const player=room.players[seat];
  const visible=player.hand.concat(room.discards.filter(d=>d.calledBy===undefined).map(d=>d.tile),room.players.flatMap(p=>(p.melds||[]).flatMap(m=>m.tiles)),indicators(room));
  const counts=countsOf(visible);
- return waits(player).map(tile=>({tile,remaining:Math.max(0,4-counts[TILES.indexOf(tile)])}));
+ return waits(waitingPlayer(player)).map(tile=>({tile,remaining:Math.max(0,4-counts[TILES.indexOf(tile)])}));
 }
 module.exports.waitDetails=waitDetails;
+
+// Compare every current wait under ordinary ron/tsumo; never inspect hidden tiles.
+function waitYakuGuide(room,seat){
+ const p=waitingPlayer(room.players[seat]),tiles=waits(p),scenarios=[];
+ for(const tile of tiles)for(const tsumo of [false,true]){
+  const param=Majiang.Util.hule_param({rule:RULE,zhuangfeng:room.roundWind||0,menfeng:seat,lizhi:p.riichi?(p.doubleRiichi?2:1):0,baopai:[],fubaopai:[]});
+  const result=Majiang.Util.hule(shape(tsumo?p.hand.concat(tile):p.hand,p.melds||[],seat),tsumo?null:code(tile)+direction(seat,(seat+1)%4),param);
+  const yaku=(result?.hupai||[]).map(y=>({name:NAMES[y.name]||y.name,han:typeof y.fanshu==='number'?y.fanshu:0,yakuman:typeof y.fanshu==='string'?y.fanshu.length:0}));
+  scenarios.push({tile,method:tsumo?'쯔모':'론',yaku,han:result?.fanshu||0,yakuman:result?.damanguan||0});
+ }
+ const guaranteed=[],possible=[];
+ for(const name of new Set(scenarios.flatMap(s=>s.yaku.map(y=>y.name)))){
+  const matches=scenarios.map(s=>s.yaku.find(y=>y.name===name));
+  const found=matches.filter(Boolean),entry={...found[0],han:Math.min(...found.map(y=>y.han)),yakuman:Math.min(...found.map(y=>y.yakuman))};
+  if(matches.every(Boolean))guaranteed.push(entry);
+  else possible.push({...entry,condition:scenarios.filter((s,i)=>matches[i]).map(s=>`${s.tile} ${s.method}`).join(' / ')});
+ }
+ if(tiles.length&&scenarios.some(s=>!s.yakuman)&&p.riichi&&p.ippatsu)possible.push({name:'일발',han:1,yakuman:0,condition:'일발 유효 기간에 울기 없이 화료'});
+ if(tiles.length&&scenarios.some(s=>!s.yakuman)&&!p.riichi&&!(p.melds||[]).some(m=>m.type!=='ankan')&&p.score>=1000&&room.wall.length>=4)possible.push({name:'리치',han:1,yakuman:0,condition:'현재 대기를 유지하며 리치 선언'});
+ return {afterDraw:p!==room.players[seat],guaranteed,possible,totals:tiles.map(tile=>({tile,ron:scenarios.find(s=>s.tile===tile&&s.method==='론'),tsumo:scenarios.find(s=>s.tile===tile&&s.method==='쯔모')}))};
+}
+module.exports.waitYakuGuide=waitYakuGuide;
+
+function waitingPlayer(player){
+ if(player.drawn&&player.hand.length===14-3*(player.melds||[]).length){
+  const hand=player.hand.slice(),i=hand.lastIndexOf(player.drawn);
+  if(i>=0){hand.splice(i,1);return {...player,hand};}
+ }
+ return player;
+}
