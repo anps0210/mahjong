@@ -210,7 +210,11 @@ socket.on("game:private", s => {
     `X ${s.wallCount}`;
 
   $("wall").setAttribute("aria-label", `남은 패 ${s.wallCount}장`);
-  $("waitHelp").textContent = s.waits?.length ? `대기패: ${s.waits.join(' · ')}${s.furiten?' · 후리텐':''}` : '';
+  hideWaitPreview();
+  const details=s.waitDetails||[];
+  $("waitButton").classList.toggle("hidden", !details.length);
+  $("waitHelp").textContent='';
+  $("waitPreview").innerHTML=`<strong>대기패${s.furiten?' · 후리텐':''}</strong><div class="wait-tiles">${details.map(d=>`<div>${tileFace(d.tile)}<b>${d.remaining}장</b></div>`).join('')}</div><small>보이지 않는 패 기준 · 상대 손패와 왕패에도 있을 수 있어요</small>`;
   renderCalls();
   renderMelds();
   renderHand();
@@ -471,3 +475,22 @@ function animateDiscard(discard) {
     animation.finished.catch(()=>{}).finally(()=>ghost.remove());
   });
 }
+
+
+function hideWaitPreview(){
+  $("waitPreview").classList.add("hidden");
+  $("waitButton").setAttribute("aria-expanded","false");
+}
+function showWaitPreview(){
+  if($("waitButton").classList.contains("hidden")||!ready||!roomState?.started)return;
+  $("waitPreview").classList.remove("hidden");
+  $("waitButton").setAttribute("aria-expanded","true");
+}
+$("waitButton").addEventListener('pointerdown',e=>{e.preventDefault();$("waitButton").setPointerCapture?.(e.pointerId);showWaitPreview();});
+for(const event of ['pointerup','pointercancel','lostpointercapture','blur'])$("waitButton").addEventListener(event,hideWaitPreview);
+$("waitButton").addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();showWaitPreview();}});
+$("waitButton").addEventListener('keyup',hideWaitPreview);
+$("waitButton").addEventListener('contextmenu',e=>e.preventDefault());
+window.addEventListener('blur',hideWaitPreview);
+document.addEventListener('visibilitychange',hideWaitPreview);
+socket.on('disconnect',hideWaitPreview);

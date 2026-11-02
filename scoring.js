@@ -83,3 +83,12 @@ function endDraw(room,reason='패산 소진'){
  room.message=nagashi.length?'유국 · 유국만관 정산':`유국 · ${reason}`;
 }
 module.exports={evaluateWin,settleWins,endDraw,isFuriten,waits,indicators,code,shape,NAMES,RULE};
+
+// Unknown copies, not the hidden live-wall count. Claimed discards are in melds.
+function waitDetails(room,seat){
+ const player=room.players[seat];
+ const visible=player.hand.concat(room.discards.filter(d=>d.calledBy===undefined).map(d=>d.tile),room.players.flatMap(p=>(p.melds||[]).flatMap(m=>m.tiles)),indicators(room));
+ const counts=countsOf(visible);
+ return waits(player).map(tile=>({tile,remaining:Math.max(0,4-counts[TILES.indexOf(tile)])}));
+}
+module.exports.waitDetails=waitDetails;
