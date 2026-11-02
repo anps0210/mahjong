@@ -6,6 +6,7 @@ const $ = id => document.getElementById(id);
 let roomCode = null;
 let myHand = [];
 let selectedHandIndex = null;
+let discardOrigin = null;
 let mySeat = -1;
 let currentTurn = 0;
 let lastDiscards = [];
@@ -224,6 +225,7 @@ socket.on("game:discarded", d => {
 
   renderDiscards();
   renderTurn();
+  animateDiscard(d);
 });
 
 socket.on("game:message", m => {
@@ -258,12 +260,13 @@ function renderHand() {
         return;
       }
       if (currentTurn !== mySeat || waitingCall || bannedTiles.includes(myHand[index]) || (ownRiichi && index !== myHand.length-1) || (choosingRiichi && !riichiChoices.includes(myHand[index]))) return;
+      discardOrigin = b.getBoundingClientRect();
       const tile = myHand[index];
       selectedHandIndex = null;
       controls();
       renderDiscards();
       request("game:discard", { tile, riichi: choosingRiichi }, res => {
-        if (res?.error) $("gameMessage").textContent = res.error;
+        if (res?.error) { discardOrigin = null; $("gameMessage").textContent = res.error; }
       });
     };
   });
@@ -436,3 +439,35 @@ document.addEventListener("fullscreenchange", () => {
 });
 controls();
 socket.connect();
+
+
+function animateDiscard(discard) {
+  const origin = discard.seat === mySeat ? discardOrigin : null;
+  discardOrigin = null;
+  if (!window.requestAnimationFrame || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  requestAnimationFrame(() => {
+    const offset = (discard.seat - mySeat + 4) % 4;
+    const target = document.querySelector(`.river.${positions[offset]} .tile:last-child`);
+    if (!target || typeof target.animate !== 'function') return;
+    const end = target.getBoundingClientRect();
+    const seat = document.querySelector(`.seat.${positions[offset]}`);
+    const start = origin || seat?.getBoundingClientRect() || end;
+    const ghost = document.createElement('div');
+    ghost.className = 'discard-flight';
+    ghost.innerHTML = tileFace(discard.tile);
+    const rotation = [0,-90,180,90][offset];
+    const w = offset % 2 ? end.height : end.width;
+    const h = offset % 2 ? end.width : end.height;
+    Object.assign(ghost.style,{left:`${end.x+end.width/2}px`,top:`${end.y+end.height/2}px`,width:`${w}px`,height:`${h}px`});
+    document.body.append(ghost);
+    const dx=start.x+start.width/2-end.x-end.width/2;
+    const dy=start.y+start.height/2-end.y-end.height/2;
+    const animation=ghost.animate([
+      {transform:`translate(-50%,-50%) translate(${dx}px,${dy}px) rotate(${rotation}deg) scale(1.15)`,opacity:1},
+      {transform:`translate(-50%,-50%) translate(${dx*.3}px,${dy*.3-12}px) rotate(${rotation}deg) scale(1.08)`,offset:.65,opacity:1},
+      {transform:`translate(-50%,-50%) rotate(${rotation}deg) scale(1)`,opacity:1}
+    ],{duration:280,easing:'cubic-bezier(.2,.65,.3,1)'});
+    target.animate([{opacity:0},{opacity:0,offset:.8},{opacity:1}],{duration:280});
+    animation.finished.catch(()=>{}).finally(()=>ghost.remove());
+  });
+}
