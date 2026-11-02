@@ -136,7 +136,9 @@ test('selection requires the same physical tile twice and highlights matching di
   const d = page.window.document;
   const first = d.querySelector('#hand [data-i="0"]');
   const duplicate = d.querySelector('#hand [data-i="1"]');
+  const originalRiverTile=d.querySelector(".river .tile");
   first.click();
+  assert.equal(d.querySelector(".river .tile"),originalRiverTile);
   assert.equal(page.window.sentDiscards.length,0);
   assert.equal(first.getAttribute('aria-pressed'),'true');
   assert.equal(d.querySelectorAll('.river .matching-tile').length,2);
