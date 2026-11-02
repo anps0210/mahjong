@@ -409,3 +409,28 @@ body.in-game { background:#101b29; }
 .wait-tiles .tile { width:32px; }
 .wait-tiles b { font-size:13px; }
 #waitPreview small { font-size:10px; color:#c2d3e0; }
+
+/* Match a low viewing angle: tile faces foreshorten while their front edges stay visible. */
+.table-plane {
+ height:140dvh;
+ transform:translate(-50%,-50%) perspective(1000px) rotateX(48deg) scale(.84);
+ --center-size:calc(6 * var(--river-tile) + 9px);
+ --river-depth:calc(3 * var(--river-tile) / .7 + 6px);
+ background:radial-gradient(ellipse at 50% 40%,#355884,#203958 75%);
+}
+.table-plane .tablecenter { width:calc(var(--center-size) * .88); height:calc(var(--center-size) * .88); border:4px solid #727c90; border-radius:10px; box-shadow:inset 0 0 0 2px #202b42,0 6px 0 #172337,0 9px 9px #07132180; }
+.table-plane .river-zone .river { width:calc(6 * var(--river-tile) + 9px); gap:1px; padding:2px; }
+.table-plane .river-zone .river.top { bottom:calc(50% + var(--center-size) / 2 + 2px); }
+.table-plane .river-zone .river.bottom { top:calc(50% + var(--center-size) / 2 + 2px); }
+.table-plane .river-zone .river.left { left:calc(50% - var(--center-size) / 2 - var(--river-depth) / 2 - 2px); }
+.table-plane .river-zone .river.right { left:calc(50% + var(--center-size) / 2 + var(--river-depth) / 2 + 2px); }
+.table-plane .tile { border-radius:3px; border-color:#c6c5be; }
+.table-plane .river.bottom .tile { box-shadow:0 2px 0 #ede5c9,0 6px 0 #c69636,1px 8px 3px #0a1a3180; }
+.table-plane .river.top .tile { box-shadow:0 -2px 0 #ede5c9,0 -6px 0 #c69636,-1px -8px 3px #0a1a3180; }
+.table-plane .river.left .tile { box-shadow:2px 0 0 #ede5c9,6px 0 0 #c69636,8px -1px 3px #0a1a3180; }
+.table-plane .river.right .tile { box-shadow:-2px 0 0 #ede5c9,-6px 0 0 #c69636,-8px 1px 3px #0a1a3180; }
+.table-plane .center-info { gap:3px; }
+@media (orientation:portrait) and (max-width:700px) {
+ .table-plane { height:100dvh; transform:translate(-50%,-50%) perspective(1000px) rotateX(43deg) scale(.64); }
+}
+@media (orientation:landscape) { .table-plane { height:200dvh; } }
