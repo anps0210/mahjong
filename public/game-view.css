@@ -434,3 +434,40 @@ body.in-game { background:#101b29; }
  .table-plane { height:100dvh; transform:translate(-50%,-50%) perspective(1000px) rotateX(43deg) scale(.64); }
 }
 @media (orientation:landscape) { .table-plane { height:200dvh; } }
+
+/* Tile faces sit above the table; four actual side planes connect them to the base. */
+.tile-side { display:none; }
+.table-plane,.table-plane #discards,.table-plane .river { transform-style:preserve-3d; }
+.table-plane .river-zone .river { overflow:visible; }
+.table-plane .river .tile {
+ --tile-depth:clamp(7px,calc(var(--river-tile) * .28),11px);
+ overflow:visible; isolation:auto; transform-style:preserve-3d;
+ background:#b98b2c; border:0; border-radius:3px;
+ box-shadow:0 2px 5px #08132166;
+}
+.table-plane .river .tile img {
+ position:absolute; inset:0; width:100%; height:100%;
+ border:1px solid #d4d4ce; border-radius:3px;
+ transform:translateZ(var(--tile-depth));
+}
+.table-plane .river .tile-side { display:block; position:absolute; border-radius:1px; }
+.table-plane .river .tile-side.front,.table-plane .river .tile-side.back {
+ left:0; width:100%; height:var(--tile-depth); transform-origin:50% 0;
+ transform:translateZ(var(--tile-depth)) rotateX(-90deg);
+ background:linear-gradient(to bottom,#fbfaf4 0%,#dfded6 65%,#dfb34f 66%,#bd882b 100%);
+}
+.table-plane .river .tile-side.front { top:100%; }
+.table-plane .river .tile-side.back { top:0; }
+.table-plane .river .tile-side.left,.table-plane .river .tile-side.right {
+ top:0; width:var(--tile-depth); height:100%; transform-origin:0 50%;
+ transform:translateZ(var(--tile-depth)) rotateY(90deg);
+ background:linear-gradient(to right,#f3f2eb 0%,#d3d2c9 65%,#d8a33b 66%,#a97320 100%);
+}
+.table-plane .river .tile-side.left { left:0; }
+.table-plane .river .tile-side.right { left:100%; }
+.table-plane .river .tile::before,.table-plane .river .tile::after { transform:translateZ(calc(var(--tile-depth) + 1px)); }
+.hand .tile { box-shadow:0 3px 0 #e3e2d9,0 6px 0 #c79a36,0 8px 5px #08132166; }
+/* Hit testing follows the raised face rather than the footprint underneath it. */
+.table-plane .river .tile img { pointer-events:auto; }
+.table-plane .river.bottom .tile,.table-plane .river.top .tile,
+.table-plane .river.left .tile,.table-plane .river.right .tile { box-shadow:0 2px 5px #08132166; }

@@ -245,7 +245,7 @@ const tileOrder = tile => {
 function tileFace(tile, extra = "") {
   const suit = {"만":"m","통":"p","삭":"s"}[tile.slice(-1)];
   const code = suit ? suit + tile[0] : 'z' + (["동","남","서","북","백","발","중"].indexOf(tile)+1);
-  return `<span class="tile ${extra}" role="img" aria-label="${escapeHtml(tile)}"><img src="/tiles/${code}.png?v=20261101-large-rivers" alt="" draggable="false"><span class="sr-only">${escapeHtml(tile)}</span></span>`;
+  return `<span class="tile ${extra}" role="img" aria-label="${escapeHtml(tile)}"><span class="tile-side front" aria-hidden="true"></span><span class="tile-side back" aria-hidden="true"></span><span class="tile-side left" aria-hidden="true"></span><span class="tile-side right" aria-hidden="true"></span><img src="/tiles/${code}.png?v=20261101-large-rivers" alt="" draggable="false"><span class="sr-only">${escapeHtml(tile)}</span></span>`;
 }
 function renderHand() {
   const tiles = myHand.map((tile, i) => ({tile, i}));
@@ -453,7 +453,7 @@ function animateDiscard(discard) {
     const offset = (discard.seat - mySeat + 4) % 4;
     const target = document.querySelector(`.river.${positions[offset]} .tile:last-child`);
     if (!target || typeof target.animate !== 'function') return;
-    const end = target.getBoundingClientRect();
+    const end = (target.querySelector('img') || target).getBoundingClientRect();
     const seat = document.querySelector(`.seat.${positions[offset]}`);
     const start = origin || seat?.getBoundingClientRect() || end;
     const ghost = document.createElement('div');
