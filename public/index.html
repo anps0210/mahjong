@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>雀 ROOM - 온라인 마작</title>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="game-view.css?v=20261102-performance">
+<link rel="stylesheet" href="game-view.css?v=20261102-music">
 </head>
 <body>
 <main class="shell">
@@ -47,7 +47,7 @@
 </section>
 
 <section id="game" class="panel hidden">
-<span id="gameCode" class="sr-only"></span><span id="turnText" class="sr-only"></span><button id="fullscreenButton" type="button">전체화면</button>
+<span id="gameCode" class="sr-only"></span><span id="turnText" class="sr-only"></span><button id="musicButton" type="button" aria-pressed="false" aria-controls="musicPlayer">음악 켜기</button><div id="musicPlayer" class="music-player hidden"></div><button id="fullscreenButton" type="button">전체화면</button>
 <p class="rotate-hint">↻ 휴대폰을 가로로 돌리면 테이블과 손패를 한눈에 볼 수 있어요.</p>
 <div class="mahjong-table">
 <div class="table-plane"><div class="table-grain"></div><div id="discards" class="discards"></div><div id="centerBoard" class="tablecenter" aria-label="중앙 점수판"><div id="centerScores"></div><div class="center-info"><span id="centerTurn" role="status" aria-live="polite"></span><span id="wall"></span><span id="riichiPot" class="center-caption"></span></div></div></div>
@@ -64,6 +64,6 @@
 <footer>Mahjong Room · 실시간 방/턴 동기화 데모</footer>
 </main>
 <script src="/socket.io/socket.io.js"></script>
-<script src="app.js?v=20261102-performance"></script>
+<script src="app.js?v=20261102-music"></script>
 </body>
 </html>
