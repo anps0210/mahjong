@@ -103,3 +103,12 @@ test('passing a complete no-yaku hand causes temporary furiten before a later ho
  f.room.wall=[];assert.equal(evaluateWin(f.room,1,f.ctx),null);
  f.room.players[1].temporaryFuriten=false;assert.ok(evaluateWin(f.room,1,f.ctx).yaku.some(y=>y.name==='하저로어'));
 });
+test('wait counts use visible tiles without double counting called discards or hidden hands',()=>{
+ const f=fixture('m123456p55789s234',{win:'s4'});
+ f.room.discards=[{seat:0,tile:'4삭',calledBy:2}];
+ f.room.players[2].melds=[{type:'pon',tiles:['4삭','4삭','4삭'],called:'4삭',from:0}];
+ f.room.players[3].hand=['4삭'];
+ const details=()=>require('../scoring').waitDetails(f.room,1).find(d=>d.tile==='4삭');
+ assert.equal(details().remaining,1);
+ f.room.doraIndicators=['4삭'];assert.equal(details().remaining,0);
+});
