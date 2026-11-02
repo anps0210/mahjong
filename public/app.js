@@ -521,3 +521,20 @@ function renderWaitYaku(guide){
  const list=(entries,kind)=>entries.length?entries.map(y=>`<span class="yaku-${kind}" title="${escapeHtml(y.condition||'모든 대기패의 일반 론·쯔모에서 성립')}">${escapeHtml(y.name)} <b>${value(y)}</b>${y.condition?`<small>${escapeHtml(y.condition)}</small>`:''}</span>`).join(''):'<span class="yaku-possible">없음</span>';
  return `<div class="wait-yaku">${guide.afterDraw?'<p>쯔모패를 버리고 현재 대기를 유지할 경우</p>':''}<strong>확정 역</strong><div>${list(guide.guaranteed,'guaranteed')}</div><strong>가능 역</strong><div>${list(guide.possible,'possible')}</div><p>${guide.totals.map(t=>`${escapeHtml(t.tile)}: 론 ${t.ron?.han||t.ron?.yakuman?value(t.ron):'역 없음'} · 쯔모 ${t.tsumo?.han||t.tsumo?.yakuman?value(t.tsumo):'역 없음'}`).join('<br>')}</p><small>현재 대기형의 일반 화료 기준 · 도라·우라도라·특수상황 역은 합계 제외<br>후리텐이면 론 불가. 가능한 역은 조건 충족 시에만 추가됩니다.</small></div>`;
 }
+
+
+// The original YouTube player handles playback and attribution.
+$("musicButton").onclick = () => {
+  const player=$("musicPlayer"), enabled=$("musicButton").getAttribute("aria-pressed") !== "true";
+  $("musicButton").setAttribute("aria-pressed",String(enabled));
+  $("musicButton").textContent=enabled?"음악 끄기":"음악 켜기";
+  player.classList.toggle("hidden",!enabled);
+  if(enabled){
+    const frame=document.createElement("iframe");
+    frame.src="https://www.youtube-nocookie.com/embed/bRU2AwnJoLo?autoplay=1&playsinline=1&loop=1&playlist=bRU2AwnJoLo";
+    frame.title="배경 음악 YouTube 플레이어";
+    frame.allow="autoplay; encrypted-media; picture-in-picture";
+    frame.allowFullscreen=true;
+    player.replaceChildren(frame);
+  } else player.replaceChildren();
+};

@@ -483,3 +483,7 @@ body.in-game { background:#101b29; }
 #waitPreview { pointer-events:auto; }
 /* Reserve the rightmost strip for the held help button, even with many chi choices. */
 .call-panel { right:70px; max-width:calc(100% - 82px); }
+
+#musicButton { position:absolute; top:8px; right:105px; z-index:30; padding:5px 9px; font-size:11px; background:#e6f3ed; color:#245657; border-color:#7da8a1; }
+.music-player { position:absolute; z-index:29; right:10px; top:40px; width:200px; height:200px; background:#101820; box-shadow:0 4px 14px #0008; }
+.music-player iframe { display:block; width:100%; height:100%; border:0; }
