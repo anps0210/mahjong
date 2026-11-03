@@ -295,12 +295,24 @@ function seatLayout(){
  const places=gamePlayerCount===3?['bottom','right','left']:positions;
  return places.map((position,offset)=>({seat:(Math.max(0,mySeat)+offset)%gamePlayerCount,position}));
 }
+// Separate projected faces keep side hands upright instead of rotating flat rectangles.
+function opponentTileBack(position){
+ if(position==='top')return '<svg viewBox="0 0 30 42" focusable="false"><path d="M2 1H28L29 6H1Z" fill="#fcfcf4" stroke="#c4c7c4" stroke-width=".7"/><path d="M1 6H29V40Q29 41 27 41H3Q1 41 1 39Z" fill="#eda83b" stroke="#926b32" stroke-width=".8"/><path d="M2 7H28V11H2Z" fill="#ffd475"/><path d="M3 11V39" stroke="#ffe2a0" stroke-width=".7"/></svg>';
+ return '<svg viewBox="0 0 40 52" focusable="false"><path d="M20 2H30L23.78 24.22H13.78Z" fill="#fffef7" stroke="#c8d0cf" stroke-width=".6"/><path d="M13.78 24.22H23.78L33.78 50H23.78Z" fill="#dce8ed" stroke="#b4c5cc" stroke-width=".6"/><path d="M30 2L23.78 24.22L33.78 50L40 27.78Z" fill="#f0aa36" stroke="#a7772f" stroke-width=".6"/><path d="M29.6 3.5L24.2 23" stroke="#ffce64" stroke-width="1"/></svg>';
+}
 function renderOpponentHands(){
  const markup=roomState?.started?seatLayout().filter(({seat})=>seat!==mySeat).map(({seat,position})=>{
   const p=roomState.players[seat];
   if(!p)return '';
   const count=Math.max(0,Math.min(14,p.handCount||0));
-  return `<div class="opponent-hand ${position}" data-seat="${seat}" role="img" aria-label="${winds[seat]}가 손패 ${count}장${p.hasDrawn?' · 쯔모패 포함':''}">${Array.from({length:count},(_,i)=>`<span class="tile-back${p.hasDrawn&&i===count-1?' drawn-back':''}" aria-hidden="true"></span>`).join('')}</div>`;
+  const drawnIndex=position==='left'?count-1:0;
+  const gap=p.hasDrawn ? .4 : 0;
+  const tiles=Array.from({length:count},(_,i)=>{
+   const drawn=p.hasDrawn&&i===drawnIndex;
+   const slot=i+(p.hasDrawn&&(position==='left'?drawn:i>0)?gap:0);
+   return `<span class="tile-back${drawn?' drawn-back':''}" style="--slot:${slot};z-index:${i+1}" aria-hidden="true">${opponentTileBack(position)}</span>`;
+  }).join('');
+  return `<div class="opponent-hand ${position}" style="--slots:${Math.max(0,count-1)+gap}" data-seat="${seat}" role="img" aria-label="${winds[seat]}가 손패 ${count}장${p.hasDrawn?' · 쯔모패 포함':''}">${tiles}</div>`;
  }).join(''):'';
  if($("opponentHands").innerHTML!==markup)$("opponentHands").innerHTML=markup;
 }
