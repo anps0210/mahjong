@@ -47,7 +47,7 @@ function saveSession(value) {
 
 function controls() {
   $("create").disabled = $("join").disabled = !ready || pending;
-  $("start").disabled = !ready || pending || !roomState || roomState.started ||
+  $("start").disabled = Boolean(kyokaActive) || !ready || pending || !roomState || roomState.started ||
     !roomState.players[mySeat]?.host || roomState.players.length !== (roomState.playerCount||4) ||
     roomState.players.some(p => !p.connected);
   $("fillBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || roomState.players.length >= (roomState.playerCount||4);
@@ -156,6 +156,7 @@ socket.on("room:update", room => {
   if (room.code !== roomCode) return;
   roomState = room;
   gamePlayerCount=room.playerCount||4;
+  if(room.started&&kyokaActive)finishKyoka();
   renderResult(room);
   renderOpponentHands();
   $("doraIndicators").innerHTML = `<small>도라 표시패</small>${(room.doraIndicators||[]).map(t=>tileFace(t)).join("")}`;
@@ -166,7 +167,7 @@ socket.on("room:update", room => {
 
   $("count").textContent =
     `${room.players.length}/${gamePlayerCount}`;
-  $("modeRules").textContent=gamePlayerCount===3?"3인 · 35,000점 시작 · 2~8만 제외 · 치 없음 · 북 빼기도라 · 쯔모 손실 · 노텐 벌부 2,000점":"4명이 모이면 방장이 게임을 시작할 수 있어.";
+  $("modeRules").textContent=gamePlayerCount===3?"3인 · 35,000점 시작 · 2~8만 제외 · 치 없음 · 북 빼기도라 · 특수 역만 경화수월 · 쯔모 손실 · 노텐 벌부 2,000점":"4명이 모이면 방장이 게임을 시작할 수 있어.";
 
   $("players").innerHTML = room.players.map((p, i) =>
     `<div class="player">
@@ -383,6 +384,7 @@ function renderMelds() {
 $("nukiButton").onclick = () => request("game:nuki",undefined,res=>{if(res?.error)$("gameMessage").textContent=res.error;});
 $("tsumoButton").onclick = () => request("game:tsumo",undefined,res=>{if(res?.error)$("gameMessage").textContent=res.error;});
 function renderResult(room) {
+  if(startKyoka(room)){ $("roundResult").classList.add("hidden");return; }
   const panel=$("roundResult"),r=room.result;
   panel.classList.toggle("hidden",!r);
   if(!r){panel.innerHTML='';return;}

@@ -1,0 +1,16 @@
+.kyoka-scene { position:fixed; inset:0; z-index:10000; overflow:hidden; background:#000; color:#fff; display:grid; place-items:center; }
+.kyoka-line { position:absolute; inset:0; margin:0; display:grid; place-items:center; padding:8vw; text-align:center; font-family:Georgia,'Noto Serif KR',serif; font-size:clamp(25px,4.5vw,60px); letter-spacing:.08em; opacity:0; animation:kyoka-words 1.7s ease-in-out both; animation-delay:var(--delay); }
+.kyoka-line.final { font-size:clamp(38px,7vw,90px); }
+@keyframes kyoka-words { 0%,100%{opacity:0;transform:translateY(5px)} 28%,72%{opacity:1;transform:translateY(0)} }
+.kyoka-cracks { position:absolute; inset:0; width:100%; height:100%; opacity:0; animation:kyoka-crack 1.7s ease-out 6.8s both; }
+.kyoka-cracks path { fill:none; stroke:#f7fcff; stroke-width:1.3; vector-effect:non-scaling-stroke; filter:drop-shadow(1px 1px 1px #91c8e9); }
+@keyframes kyoka-crack { 0%{opacity:0;transform:scale(.98)} 4%,45%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(1.12)} }
+.kyoka-flash { position:absolute; inset:0; background:#fff; opacity:0; animation:kyoka-flash .38s linear 6.8s both; }
+@keyframes kyoka-flash { 0%,100%{opacity:0} 8%{opacity:.95} }
+.kyoka-image { position:absolute; width:100%; height:100%; object-fit:contain; opacity:0; animation:kyoka-reveal 1.8s ease-out 6.8s both; }
+@keyframes kyoka-reveal { 0%{opacity:0;transform:scale(1.16)} 6%,28%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(1.025)} }
+.kyoka-skip { position:absolute; right:16px; bottom:16px; z-index:2; border:1px solid #ffffff66; background:#0009; color:#fff; font-size:12px; }
+@media(prefers-reduced-motion:reduce){
+ .kyoka-flash,.kyoka-cracks { display:none; }
+ .kyoka-line,.kyoka-image { transform:none!important; }
+}
