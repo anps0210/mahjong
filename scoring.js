@@ -55,7 +55,7 @@ function scoreHand(room,p,hand,ron,param){
 function kyokaSuit(room,seat,tile,from){
  if(!isSanma(room)||from===null||!tile||!['통','삭'].includes(tile.slice(-1)))return null;
  const suit=tile.slice(-1);
- return room.discards.filter(d=>d.seat===seat&&d.tile.endsWith(suit)).length>=10?suit:null;
+ return room.discards.filter(d=>d.seat===seat&&d.tile.endsWith(suit)).length>=5?suit:null;
 }
 function evaluateWin(room,seat,{tile,from=null,robKan=false,robAnkan=false}={}){
  const p=room.players[seat],melds=p.melds||[],tsumo=from===null;
