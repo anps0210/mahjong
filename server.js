@@ -116,6 +116,8 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
         riichi: Boolean(p.riichi),
         melds: p.melds || [],
         nuki: p.nuki || 0,
+        handCount: p.hand.length,
+        hasDrawn: Boolean(p.drawn),
         bot: Boolean(p.bot),
         connected: p.connected
       })),

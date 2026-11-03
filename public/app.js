@@ -157,6 +157,7 @@ socket.on("room:update", room => {
   roomState = room;
   gamePlayerCount=room.playerCount||4;
   renderResult(room);
+  renderOpponentHands();
   $("doraIndicators").innerHTML = `<small>도라 표시패</small>${(room.doraIndicators||[]).map(t=>tileFace(t)).join("")}`;
   if (room.paused || !room.started) selectedHandIndex = null;
   renderDiscards();
@@ -228,6 +229,7 @@ socket.on("game:private", s => {
   $("waitPreview").innerHTML=`<strong>대기패${s.furiten?' · 후리텐':''}</strong><div class="wait-tiles">${details.map(d=>`<div>${tileFace(d.tile)}<b>${d.remaining}장</b></div>`).join('')}</div>${renderWaitYaku(s.waitYaku)}<small>장수는 보이지 않는 패 기준 · 상대 손패·왕패 포함</small>`;
   renderCalls();
   renderMelds();
+  renderOpponentHands();
   renderHand();
   renderTurn();
   renderDiscards();
@@ -292,6 +294,15 @@ $("sortHand").onchange = () => { selectedHandIndex = null; renderHand(); renderD
 function seatLayout(){
  const places=gamePlayerCount===3?['bottom','right','left']:positions;
  return places.map((position,offset)=>({seat:(Math.max(0,mySeat)+offset)%gamePlayerCount,position}));
+}
+function renderOpponentHands(){
+ const markup=roomState?.started?seatLayout().filter(({seat})=>seat!==mySeat).map(({seat,position})=>{
+  const p=roomState.players[seat];
+  if(!p)return '';
+  const count=Math.max(0,Math.min(14,p.handCount||0));
+  return `<div class="opponent-hand ${position}" data-seat="${seat}" role="img" aria-label="${winds[seat]}가 손패 ${count}장${p.hasDrawn?' · 쯔모패 포함':''}">${Array.from({length:count},(_,i)=>`<span class="tile-back${p.hasDrawn&&i===count-1?' drawn-back':''}" aria-hidden="true"></span>`).join('')}</div>`;
+ }).join(''):'';
+ if($("opponentHands").innerHTML!==markup)$("opponentHands").innerHTML=markup;
 }
 function renderDiscards() {
   const riverMarkup = seatLayout().map(({seat,position}) => {
