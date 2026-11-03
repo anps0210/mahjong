@@ -1,7 +1,8 @@
+const {isSanma,allowedTile}=require('./rules');
 const {shanten,countsOf,TILES}=require('./bot');
 function riichiDiscards(room,seat){
  const p=room.players[seat];
- if(!room.started || room.pendingCall || room.turn!==seat || p.riichi || p.melds?.some(m=>m.type!=="ankan") || p.hand.length!==14-3*(p.melds?.length||0) || (p.score??25000)<1000 || room.wall.length<4) return [];
+ if(!room.started || room.pendingCall || room.turn!==seat || p.riichi || p.melds?.some(m=>m.type!=="ankan") || p.hand.length!==14-3*(p.melds?.length||0) || (p.score??25000)<1000 || room.wall.length<(isSanma(room)?3:4)) return [];
  const counts=countsOf(p.hand), choices=[];
  const meldCounts=countsOf((p.melds||[]).flatMap(m=>m.tiles));
  for(let i=0;i<34;i++)if(counts[i]){
@@ -9,7 +10,7 @@ function riichiDiscards(room,seat){
   if(shanten(counts,p.melds?.length||0)===0){
    // A nominal shape requiring a fifth copy is not a legal wait.
    const hasWait=TILES.some((_,j)=>{
-    if(counts[j]+meldCounts[j]>=4)return false;
+    if(!allowedTile(TILES[j],isSanma(room)) || counts[j]+meldCounts[j]+(TILES[j]==='북'?(p.nuki||0):0)>=4)return false;
     counts[j]++;const complete=shanten(counts,p.melds?.length||0)===-1;counts[j]--;return complete;
    });
    if(hasWait) choices.push(TILES[i]);

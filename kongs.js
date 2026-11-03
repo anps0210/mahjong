@@ -17,7 +17,15 @@ function options(room,seat){
  }
  return out;
 }
-function replacement(room,p){p.drawn=room.deadWall.shift();p.hand.push(p.drawn);room.deadWall.push(room.wall.pop());room.kanCount++;p.rinshan=true;p.temporaryFuriten=false;}
+function drawReplacement(room,p){
+ // Keep the ten indicator tiles fixed even after repeated kita plus kans.
+ room.replacementTiles ||= room.deadWall.slice(0,4);
+ p.drawn=room.replacementTiles.shift();
+ room.replacementTiles.push(room.wall.pop());
+ room.deadWall.splice(0,4,...room.replacementTiles);
+ p.hand.push(p.drawn);p.temporaryFuriten=false;p.nukiDraw=false;
+}
+function replacement(room,p){drawReplacement(room,p);room.kanCount++;p.rinshan=true;}
 function apply(room,seat,option){
  const p=room.players[seat];
  if(option.type==='ankan'){
@@ -27,4 +35,4 @@ function apply(room,seat,option){
  }
  p.banned=[];room.interrupted=true;room.players.forEach(p=>p.ippatsu=false);replacement(room,p);
 }
-module.exports={options,apply,replacement};
+module.exports={options,apply,replacement,drawReplacement};

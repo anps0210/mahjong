@@ -485,3 +485,13 @@ body.in-game { background:#101b29; }
 .call-panel { right:70px; max-width:calc(100% - 82px); }
 
 #musicButton { position:absolute; top:8px; right:105px; z-index:30; padding:5px 9px; font-size:11px; background:#e6f3ed; color:#245657; border-color:#7da8a1; }
+
+#playerCount { display:block; width:100%; margin-top:7px; padding:12px; border:1px solid #567064; border-radius:10px; background:#101b19; color:#f6f2e6; font:inherit; font-size:16px; }
+#nukiButton { background:#f5df91; color:#27352d; }
+.nuki-count { padding:4px 7px; border-radius:6px; background:#f5df91; color:#27352d; font-size:12px; white-space:nowrap; }
+/* Extra kita/kan actions grow upward without pushing the hand off-screen. */
+@media (orientation:landscape) {
+ .hand-dock { grid-template-rows:minmax(0,1fr); }
+ .hand-tools { align-self:end; }
+ .hand { min-height:0; }
+}
