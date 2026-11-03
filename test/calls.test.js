@@ -103,8 +103,22 @@ test('page highlights callable discard, offers each chi, and displays claimed me
  assert.equal(doc.querySelectorAll('.river .tile').length,1);
  await answer(p[2],null);
  doc.querySelector('#callPanel button[data-choice="0"]').click();
- await until(()=>doc.querySelectorAll('#melds .meld-group').length===1);
+ await until(()=>doc.querySelectorAll('#melds .table-meld').length===1);
  assert.equal(doc.querySelectorAll('#hand button').length,11);
+ assert.ok(doc.querySelector('.table-plane #melds .meld-seat.bottom .table-meld > .tile:first-child').classList.contains('called-tile'));
+ assert.equal(doc.querySelector('.table-meld').getAttribute('aria-label'),'동가에서 치');
+ // Seat-relative markers also work when viewing other seats and in sanma.
+ for(const count of [3,4])for(let seat=0;seat<count;seat++)for(let distance=1;distance<count;distance++)for(const type of ['pon','kan','kakan']){
+  const m={type,tiles:Array(type==='pon'?3:4).fill('백'),called:'백',from:(seat+distance)%count};
+  const markup=page.window.eval(`gamePlayerCount=${count};meldMarkup(${JSON.stringify(m)},${seat})`);
+  const template=doc.createElement('template');template.innerHTML=markup;
+  const children=[...template.content.firstElementChild.children];
+  const index=children.findIndex(e=>e.classList.contains('called-tile')||e.classList.contains('added-kan'));
+  assert.equal(index,distance===count-1?0:distance===1?(type==='kan'?3:2):1);
+  assert.equal(template.content.querySelectorAll('.tile').length,type==='pon'?3:4);
+ }
+ page.window.eval('gamePlayerCount=4');
+
  assert.equal(doc.querySelectorAll('.river .callable').length,0);
  assert.equal(doc.querySelectorAll('.river .claimed').length,1);
  assert.ok(doc.getElementById('callPanel').classList.contains('hidden'));

@@ -439,36 +439,36 @@ body.in-game { background:#101b29; }
 .tile-side { display:none; }
 .table-plane,.table-plane #discards,.table-plane .river { transform-style:preserve-3d; }
 .table-plane .river-zone .river { overflow:visible; }
-.table-plane .river .tile {
+.table-plane :is(.river,.table-melds) .tile {
  --tile-depth:clamp(7px,calc(var(--river-tile) * .28),11px);
  overflow:visible; isolation:auto; transform-style:preserve-3d;
  background:#b98b2c; border:0; border-radius:3px;
  box-shadow:0 2px 5px #08132166;
 }
-.table-plane .river .tile img {
+.table-plane :is(.river,.table-melds) .tile img {
  position:absolute; inset:0; width:100%; height:100%;
  border:1px solid #d4d4ce; border-radius:3px;
  transform:translateZ(var(--tile-depth));
 }
-.table-plane .river .tile-side { display:block; position:absolute; border-radius:1px; }
-.table-plane .river .tile-side.front,.table-plane .river .tile-side.back {
+.table-plane :is(.river,.table-melds) .tile-side { display:block; position:absolute; border-radius:1px; }
+.table-plane :is(.river,.table-melds) .tile-side.front,.table-plane :is(.river,.table-melds) .tile-side.back {
  left:0; width:100%; height:var(--tile-depth); transform-origin:50% 0;
  transform:translateZ(var(--tile-depth)) rotateX(-90deg);
  background:linear-gradient(to bottom,#fbfaf4 0%,#dfded6 65%,#dfb34f 66%,#bd882b 100%);
 }
-.table-plane .river .tile-side.front { top:100%; }
-.table-plane .river .tile-side.back { top:0; }
-.table-plane .river .tile-side.left,.table-plane .river .tile-side.right {
+.table-plane :is(.river,.table-melds) .tile-side.front { top:100%; }
+.table-plane :is(.river,.table-melds) .tile-side.back { top:0; }
+.table-plane :is(.river,.table-melds) .tile-side.left,.table-plane :is(.river,.table-melds) .tile-side.right {
  top:0; width:var(--tile-depth); height:100%; transform-origin:0 50%;
  transform:translateZ(var(--tile-depth)) rotateY(90deg);
  background:linear-gradient(to right,#f3f2eb 0%,#d3d2c9 65%,#d8a33b 66%,#a97320 100%);
 }
-.table-plane .river .tile-side.left { left:0; }
-.table-plane .river .tile-side.right { left:100%; }
-.table-plane .river .tile::before,.table-plane .river .tile::after { transform:translateZ(calc(var(--tile-depth) + 1px)); }
+.table-plane :is(.river,.table-melds) .tile-side.left { left:0; }
+.table-plane :is(.river,.table-melds) .tile-side.right { left:100%; }
+.table-plane :is(.river,.table-melds) .tile::before,.table-plane :is(.river,.table-melds) .tile::after { transform:translateZ(calc(var(--tile-depth) + 1px)); }
 .hand .tile { box-shadow:0 3px 0 #e3e2d9,0 6px 0 #c79a36,0 8px 5px #08132166; }
 /* Hit testing follows the raised face rather than the footprint underneath it. */
-.table-plane .river .tile img { pointer-events:auto; }
+.table-plane :is(.river,.table-melds) .tile img { pointer-events:auto; }
 .table-plane .river.bottom .tile,.table-plane .river.top .tile,
 .table-plane .river.left .tile,.table-plane .river.right .tile { box-shadow:0 2px 5px #08132166; }
 #waitButton { top:auto; bottom:calc(50% + 18px); }
@@ -514,4 +514,30 @@ body.in-game { background:#101b29; }
  .opponent-hand { --step-y:14px; }
  .opponent-hand.left { left:10%; }
  .opponent-hand.right { left:90%; }
+}
+
+/* Exposed sets share the table's perspective and physical tile thickness. */
+.table-melds,.meld-seat,.table-meld,.added-kan { transform-style:preserve-3d; }
+.table-melds { position:absolute; inset:0; pointer-events:none; --meld-tile:calc(var(--river-tile) * .9); }
+.meld-seat { position:absolute; display:flex; align-items:end; gap:10px; width:max-content; transform-origin:center; }
+.meld-seat.bottom { left:55%; top:79%; transform:translate(-50%,-50%); }
+.meld-seat.top { left:28%; top:29%; transform:translate(-50%,-50%) rotate(180deg); }
+.meld-seat.left { left:21%; top:61%; transform:translate(-50%,-50%) rotate(90deg); }
+.meld-seat.right { left:79%; top:39%; transform:translate(-50%,-50%) rotate(-90deg); }
+.table-meld { display:flex; align-items:end; gap:1px; }
+.table-melds .tile { width:var(--meld-tile); min-width:0; height:calc(var(--meld-tile) / .7); padding:0; flex:none; }
+.table-melds .tile.called-tile { width:calc(var(--meld-tile) / .7); height:var(--meld-tile); }
+.table-plane .table-melds .tile.called-tile img { width:var(--meld-tile); height:calc(var(--meld-tile) / .7); left:50%; top:50%; transform:translate(-50%,-50%) translateZ(var(--tile-depth)) rotate(90deg); }
+.added-kan { display:block; position:relative; width:calc(var(--meld-tile) / .7); height:var(--meld-tile); }
+.table-melds .stacked-tile { position:absolute; left:0; top:calc(-1 * var(--meld-tile) - 1px); }
+.table-plane .table-melds .concealed-meld-tile img { content:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='100'%3E%3Crect width='70' height='100' rx='4' fill='%23efb044'/%3E%3C/svg%3E"); }
+/* A sideways riichi tile consumes its real width; the following tiles move over. */
+.table-plane .river-zone .river { display:block; width:calc(6 * var(--river-tile) + var(--river-tile) / .7 - var(--river-tile) + 9px); }
+.table-plane .river .tile { position:absolute; left:calc(2px + var(--column) * (var(--river-tile) + 1px) + var(--sideways-before) * (var(--river-tile) / .7 - var(--river-tile))); top:calc(2px + var(--row) * (var(--river-tile) / .7 + 1px)); width:var(--river-tile); height:calc(var(--river-tile) / .7); }
+.table-plane .river .tile.riichi-discard { width:calc(var(--river-tile) / .7); height:var(--river-tile); margin-top:calc(var(--river-tile) / .7 - var(--river-tile)); outline:none; }
+.table-plane .river .tile.riichi-discard img { width:var(--river-tile); height:calc(var(--river-tile) / .7); left:50%; top:50%; transform:translate(-50%,-50%) translateZ(var(--tile-depth)) rotate(90deg); }
+.table-plane .river .tile.riichi-discard::after { display:none; }
+
+@media (orientation:landscape) and (max-width:900px) {
+ .meld-seat.bottom { left:43%; }
 }
