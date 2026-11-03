@@ -319,7 +319,7 @@ function renderOpponentHands(){
 function renderDiscards() {
   const riverMarkup = seatLayout().map(({seat,position}) => {
     const tiles = lastDiscards.map((d,i)=>({...d,index:i})).filter(d=>d.seat===seat);
-    return `<section class="river-zone ${position}"><div class="river-label"><b>${winds[seat]}가${seat===mySeat?" · 나":""}</b><span>${escapeHtml(roomState?.players[seat]?.name||"")}${roomState?.players[seat]?.riichi?" · 리치":""}${roomState?.players[seat]?.connected===false?" · 연결 끊김":""}</span></div><div class="river ${position}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${selectedHandIndex !== null && d.tile === myHand[selectedHandIndex] ? 'matching-tile' : ''} ${d.riichi ? 'riichi-discard' : ''} ${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div></section>`;
+    return `<section class="river-zone ${position}"><div class="river-label"><b>${winds[seat]}가${seat===mySeat?" · 나":""}</b><span>${escapeHtml(roomState?.players[seat]?.name||"")}${roomState?.players[seat]?.riichi?" · 리치":""}${roomState?.players[seat]?.connected===false?" · 연결 끊김":""}</span></div><div class="river ${position}" aria-label="${winds[seat]}가 버림패">${tiles.map((d,j)=>tileFace(d.tile,`${selectedHandIndex !== null && d.tile === myHand[selectedHandIndex] ? 'matching-tile' : ''} ${d.riichi ? 'riichi-discard' : ''} ${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`).replace(' role="img"',` style="--column:${j%6};--row:${Math.floor(j/6)};--sideways-before:${tiles.slice(Math.floor(j/6)*6,j).filter(t=>t.riichi).length}" role="img"`)).join("")}</div></section>`;
   }).join("");
   if(renderDiscards.lastMarkup===riverMarkup)return;
   renderDiscards.lastMarkup=riverMarkup;
@@ -337,7 +337,7 @@ function renderDiscards() {
       const current=river.children[j];
       if(!current)river.append(tile.cloneNode(true));
       else if(current.getAttribute('aria-label')!==tile.getAttribute('aria-label'))current.replaceWith(tile.cloneNode(true));
-      else if(current.className!==tile.className)current.className=tile.className;
+      else {if(current.className!==tile.className)current.className=tile.className;if(current.getAttribute('style')!==tile.getAttribute('style'))current.setAttribute('style',tile.getAttribute('style')||'');}
     });
   });
   $("discards").querySelectorAll(".river").forEach(river=>{river.scrollTop=river.scrollHeight;});
@@ -353,12 +353,31 @@ function renderCalls() {
   panel.innerHTML = `<div class="call-target">${tileFace(callState.tile)}<strong>이 패에 응답할 수 있어요</strong></div><div class="call-actions">${callState.options.map(o=>`<button data-choice="${o.id}"><b>${{chi:'치',pon:'퐁',kan:'깡',ron:'론',ankan:'암깡',kakan:'가깡'}[o.type]}</b><span class="call-preview">${o.consume.map(t=>tileFace(t)).join('')}</span></button>`).join('')}<button data-choice="skip" class="skip-call">스킵</button></div>`;
   panel.querySelectorAll('button').forEach(b=>b.onclick=()=>request('game:call',{id:callState.id,choice:b.dataset.choice==='skip'?null:b.dataset.choice},res=>{if(res?.error) $("gameMessage").textContent=res.error;}));
 }
+function meldMarkup(m,seat){
+ const concealed=m.type==='ankan';
+ const relative=(m.from-seat+gamePlayerCount)%gamePlayerCount;
+ // From the caller's view: left opponent -> left, opposite -> middle, right -> right.
+ const calledIndex=relative===gamePlayerCount-1?0:relative===1?(m.type==='kan'?3:2):1;
+ const tiles=m.tiles.slice();
+ if(!concealed){
+  tiles.splice(tiles.indexOf(m.called),1);
+  if(m.type==='kakan')tiles.pop();
+  tiles.sort((a,b)=>tileOrder(a)-tileOrder(b));
+  tiles.splice(calledIndex,0,m.called);
+ }
+ const label=concealed?'암깡':`${winds[m.from]}가에서 ${{chi:'치',pon:'퐁',kan:'깡',kakan:'가깡'}[m.type]}`;
+ return `<div class="table-meld" role="group" aria-label="${label}" data-from="${m.from}">${tiles.map((t,i)=>{
+  const sideways=!concealed&&i===calledIndex;
+  const face=tileFace(t,`${sideways?'called-tile':''} ${concealed&&(i===0||i===3)?'concealed-meld-tile':''}`);
+  return m.type==='kakan'&&sideways?`<span class="added-kan">${face}${tileFace(t,'called-tile stacked-tile')}</span>`:face;
+ }).join('')}</div>`;
+}
 function renderMelds() {
-  $("melds").innerHTML = seatLayout().map(({seat})=>{
-    const melds=publicMelds[seat] || [];
-    if(!melds.length&&!publicNuki[seat]) return '';
-    return `<div class="meld-row"><strong>${winds[seat]}가${seat===mySeat?' · 나':''}</strong>${publicNuki[seat]?`<span class="nuki-count">북 × ${publicNuki[seat]} · 빼기도라</span>`:''}${melds.map(m=>`<div class="meld-group" aria-label="${m.type==='ankan'?'멘젠':winds[m.from]+'가'}에서 ${m.type}"><small>${{chi:'치',pon:'퐁',kan:'깡',ron:'론',ankan:'암깡',kakan:'가깡'}[m.type]} · ${m.type==='ankan'?'멘젠':winds[m.from]+'가'}</small><div>${m.tiles.map(t=>tileFace(t)).join('')}</div></div>`).join('')}</div>`;
-  }).join('');
+ $("melds").innerHTML=seatLayout().map(({seat,position})=>{
+  const melds=publicMelds[seat]||[],nuki=publicNuki[seat]||0;
+  if(!melds.length&&!nuki)return '';
+  return `<div class="meld-seat ${position}" aria-label="${winds[seat]}가 공개패">${melds.map(m=>meldMarkup(m,seat)).reverse().join('')}${nuki?`<div class="table-meld nuki-group"><span class="sr-only">북 × ${nuki} · 빼기도라</span>${Array.from({length:nuki},()=>tileFace('북')).join('')}</div>`:''}</div>`;
+ }).join('');
 }
 
 $("nukiButton").onclick = () => request("game:nuki",undefined,res=>{if(res?.error)$("gameMessage").textContent=res.error;});

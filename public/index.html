@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>雀 ROOM - 온라인 마작</title>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="game-view.css?v=20261103-upright-hands">
+<link rel="stylesheet" href="game-view.css?v=20261103-table-melds">
 </head>
 <body>
 <main class="shell">
@@ -51,14 +51,14 @@
 <span id="gameCode" class="sr-only"></span><span id="turnText" class="sr-only"></span><button id="musicButton" type="button" aria-pressed="false" aria-controls="backgroundMusic">음악 켜기</button><audio id="backgroundMusic" src="/audio/tabineko.mp3" loop preload="none"></audio><span id="musicStatus" class="sr-only" role="status"></span><button id="fullscreenButton" type="button">전체화면</button>
 <p class="rotate-hint">↻ 휴대폰을 가로로 돌리면 테이블과 손패를 한눈에 볼 수 있어요.</p>
 <div class="mahjong-table">
-<div class="table-plane"><div class="table-grain"></div><div id="discards" class="discards"></div><div id="centerBoard" class="tablecenter" aria-label="중앙 점수판"><div id="centerScores"></div><div class="center-info"><span id="centerTurn" role="status" aria-live="polite"></span><span id="wall"></span><span id="riichiPot" class="center-caption"></span></div></div></div>
+<div class="table-plane"><div id="melds" class="table-melds" aria-label="공개된 부로"></div><div class="table-grain"></div><div id="discards" class="discards"></div><div id="centerBoard" class="tablecenter" aria-label="중앙 점수판"><div id="centerScores"></div><div class="center-info"><span id="centerTurn" role="status" aria-live="polite"></span><span id="wall"></span><span id="riichiPot" class="center-caption"></span></div></div></div>
 <div id="doraIndicators" class="dora-indicators" aria-label="도라 표시패"></div>
 <div id="opponentHands" class="opponent-hands" aria-label="상대 손패"></div>
 <div id="seats" class="seats"></div>
 </div>
 <button id="waitButton" class="hidden" type="button" aria-label="누르고 있는 동안 대기패 보기" aria-controls="waitPreview" aria-expanded="false">!</button><div id="waitPreview" class="hidden" role="region" aria-label="대기패와 남은 장수"></div>
 <div id="callPanel" class="call-panel hidden" role="region" aria-label="부로 선택"></div>
-<div id="melds" class="melds" aria-label="공개된 부로"></div>
+
 <div class="hand-dock"><span id="handHint" class="sr-only">내 차례에 패를 눌러 버리세요</span><div class="hand-tools"><button id="tsumoButton" class="hidden" type="button">쯔모</button><button id="nukiButton" class="hidden" type="button">북 빼기 · +1판</button><span id="selfKanActions"></span><span id="furitenBadge" class="hidden">후리텐 · 론 불가</span><button id="riichiButton" type="button">리치 · 1,000점</button><label class="sort-control"><input id="sortHand" type="checkbox" checked> 자동 정렬</label><label class="shanten-toggle"><input id="showShanten" type="checkbox" checked> 샹텐 수 표시</label><span id="waitHelp" role="status"></span><span id="shantenValue" role="status" title="화료 형태까지의 거리입니다. 역·후리텐 여부와는 다릅니다."></span></div><div id="hand" class="hand"></div></div>
 <p id="gameMessage" class="muted" role="status"></p>
 </section>
@@ -66,6 +66,6 @@
 <footer>Mahjong Room · 실시간 방/턴 동기화 데모</footer>
 </main>
 <script src="/socket.io/socket.io.js"></script>
-<script src="app.js?v=20261103-upright-hands"></script>
+<script src="app.js?v=20261103-table-melds"></script>
 </body>
 </html>
