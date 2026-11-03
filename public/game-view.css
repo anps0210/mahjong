@@ -487,3 +487,17 @@ body.in-game { background:#101b29; }
 #musicButton { position:absolute; top:8px; right:105px; z-index:30; padding:5px 9px; font-size:11px; background:#e6f3ed; color:#245657; border-color:#7da8a1; }
 .music-player { position:absolute; z-index:29; right:10px; top:40px; width:200px; height:200px; background:#101820; box-shadow:0 4px 14px #0008; }
 .music-player iframe { display:block; width:100%; height:100%; border:0; }
+/* The original player occupies its own screen area, outside the playable table. */
+.music-player { position:fixed; top:48px; right:8px; }
+@media (orientation:landscape) {
+ .in-game.music-on .shell { width:calc(100% - 216px); margin-left:0; margin-right:216px; }
+ .in-game.music-on #game { overflow:hidden; }
+ .in-game.music-on .table-plane { width:94%; }
+ .in-game.music-on .hand-dock { grid-template-columns:minmax(0,1fr) 140px; gap:6px; }
+ .in-game.music-on .hand { gap:2px; }
+}
+@media (orientation:portrait) {
+ .in-game.music-on { padding-bottom:216px; }
+ .in-game.music-on .shell { height:auto; }
+ .music-player { position:absolute; top:calc(max(100dvh,760px) + 8px); left:50%; right:auto; transform:translateX(-50%); }
+}

@@ -91,6 +91,7 @@ function entered(res) {
 }
 
 const show = id => {
+  if(id!=="game" && $("musicButton").getAttribute("aria-pressed")==="true") $("musicButton").click();
   document.body.classList.toggle("in-game", id === "game");
   ["home", "lobby", "game"].forEach(x =>
     $(x).classList.toggle("hidden", x !== id)
@@ -528,6 +529,8 @@ $("musicButton").onclick = () => {
   const player=$("musicPlayer"), enabled=$("musicButton").getAttribute("aria-pressed") !== "true";
   $("musicButton").setAttribute("aria-pressed",String(enabled));
   $("musicButton").textContent=enabled?"음악 끄기":"음악 켜기";
+  document.body.append(player);
+  document.body.classList.toggle("music-on",enabled);
   player.classList.toggle("hidden",!enabled);
   if(enabled){
     const frame=document.createElement("iframe");
