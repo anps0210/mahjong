@@ -524,20 +524,30 @@ function renderWaitYaku(guide){
 }
 
 
-// The original YouTube player handles playback and attribution.
-$("musicButton").onclick = () => {
-  const player=$("musicPlayer"), enabled=$("musicButton").getAttribute("aria-pressed") !== "true";
+// Local audio starts only from a user gesture. No visual player or reserved space.
+const backgroundMusic=$("backgroundMusic");
+backgroundMusic.volume=0.5;
+let musicRequest=0;
+function setMusicState(enabled){
   $("musicButton").setAttribute("aria-pressed",String(enabled));
   $("musicButton").textContent=enabled?"음악 끄기":"음악 켜기";
-  document.body.append(player);
-  document.body.classList.toggle("music-on",enabled);
-  player.classList.toggle("hidden",!enabled);
-  if(enabled){
-    const frame=document.createElement("iframe");
-    frame.src="https://www.youtube-nocookie.com/embed/bRU2AwnJoLo?autoplay=1&playsinline=1&loop=1&playlist=bRU2AwnJoLo";
-    frame.title="배경 음악 YouTube 플레이어";
-    frame.allow="autoplay; encrypted-media; picture-in-picture";
-    frame.allowFullscreen=true;
-    player.replaceChildren(frame);
-  } else player.replaceChildren();
+}
+$("musicButton").onclick = async () => {
+  const request=++musicRequest;
+  const enabled=$("musicButton").getAttribute("aria-pressed")!=="true";
+  setMusicState(enabled);
+  $("musicStatus").textContent='';
+  if(!enabled){backgroundMusic.pause();return;}
+  try { await backgroundMusic.play(); }
+  catch(error){
+    if(request!==musicRequest)return;
+    setMusicState(false);
+    $("musicButton").textContent="음악 다시 시도";
+    $("musicStatus").textContent="음악을 재생하지 못했습니다. 다시 눌러 주세요.";
+  }
 };
+backgroundMusic.addEventListener('error',()=>{
+  ++musicRequest;setMusicState(false);
+  $("musicButton").textContent="음악 다시 시도";
+  $("musicStatus").textContent="음악 파일을 불러오지 못했습니다. 다시 눌러 주세요.";
+});
