@@ -691,7 +691,7 @@ function hule(shoupai, rongpai, param) {
 
     let max;
 
-    let pre_hupai  = get_pre_hupai(param.hupai);
+    let pre_hupai  = param.extraYakuman?.length ? param.extraYakuman : get_pre_hupai(param.hupai);
     let post_hupai = get_post_hupai(shoupai, rongpai,
                                     param.baopai, param.fubaopai);
 

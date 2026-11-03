@@ -1,3 +1,4 @@
+const {randomUUID}=require('crypto');
 const {isSanma,playerCount,allowedTile}=require('./rules');
 const sanmaHule=require('./vendor/sanma-hule').hule;
 const Majiang = require('@kobalab/majiang-core');
@@ -51,6 +52,11 @@ function scoreHand(room,p,hand,ron,param){
  }
  return sanmaHule(hand,ron,param);
 }
+function kyokaSuit(room,seat,tile,from){
+ if(!isSanma(room)||from===null||!tile||!['통','삭'].includes(tile.slice(-1)))return null;
+ const suit=tile.slice(-1);
+ return room.discards.filter(d=>d.seat===seat&&d.tile.endsWith(suit)).length>=10?suit:null;
+}
 function evaluateWin(room,seat,{tile,from=null,robKan=false,robAnkan=false}={}){
  const p=room.players[seat],melds=p.melds||[],tsumo=from===null;
  if(!tile || (tsumo?!p.drawn:p.hand.length!==13-melds.length*3))return null;
@@ -67,10 +73,12 @@ function evaluateWin(room,seat,{tile,from=null,robKan=false,robAnkan=false}={}){
   tianhu:first?(seat===0&&room.discards.length===0?1:seat!==0?2:0):0,
   baopai:indicators(room).map(t=>indicatorCode(room,t)),fubaopai:p.riichi?(room.uraIndicators||[]).slice(0,1+(room.kanCount||0)).map(t=>indicatorCode(room,t)):[],
   changbang:room.honba||0,lizhibang:0});
+ const specialSuit=kyokaSuit(room,seat,tile,from);
+ if(specialSuit)param.extraYakuman=[{name:'경화수월',fanshu:'*'}];
  const result=scoreHand(room,p,shape(hand,melds,seat),tsumo?null:code(tile)+direction(seat,from),param);
  if(!result?.hupai?.length || !result.defen)return null;
  if(robAnkan&&!result.hupai.some(y=>y.name.startsWith('国士無双')))return null;
- return {seat,from,tile,method:tsumo?'tsumo':'ron',hand:tsumo?hand:hand.concat(tile),melds,
+ return {seat,from,tile,special:specialSuit?{name:'경화수월',discardedSuit:specialSuit,apparentSuit:specialSuit==='통'?'삭수':'통수'}:null,method:tsumo?'tsumo':'ron',hand:tsumo?hand:hand.concat(tile),melds,
   yaku:result.hupai.map(y=>({name:NAMES[y.name]||y.name,han:typeof y.fanshu==='number'?y.fanshu:null,yakuman:typeof y.fanshu==='string'?y.fanshu.length:0})),
   han:result.fanshu||0,fu:result.fu||0,yakuman:result.damanguan||0,points:result.defen,deltas:result.fenpei};
 }
@@ -82,7 +90,7 @@ function settleWins(room,seats,context={}){
  const deltas=Array(playerCount(room)).fill(0);results.forEach(r=>r.deltas.forEach((v,i)=>deltas[i]+=v));
  const pot=(room.riichiPot||0)*1000;deltas[seats[0]]+=pot;
  room.players.forEach((p,i)=>p.score+=deltas[i]);room.riichiPot=0;
- room.started=false;room.pendingCall=null;room.result={type:'win',winners:results,deltas,names:room.players.map(p=>p.name),scores:room.players.map(p=>p.score),pot,doraIndicators:indicators(room),uraIndicators:results.some(r=>room.players[r.seat].riichi)?(room.uraIndicators||[]).slice(0,1+room.kanCount):[]};
+ room.started=false;room.pendingCall=null;room.result={id:randomUUID(),type:'win',winners:results,deltas,names:room.players.map(p=>p.name),scores:room.players.map(p=>p.score),pot,doraIndicators:indicators(room),uraIndicators:results.some(r=>room.players[r.seat].riichi)?(room.uraIndicators||[]).slice(0,1+room.kanCount):[]};
  room.message=results.map(r=>`${room.players[r.seat].name} ${r.method==='ron'?'론':'쯔모'} · ${r.points.toLocaleString()}점`).join(' / ');
  return true;
 }
@@ -116,6 +124,7 @@ function waitYakuGuide(room,seat){
  const p=waitingPlayer(room.players[seat]),tiles=waits({...p,sanma:isSanma(room)}),scenarios=[];
  for(const tile of tiles)for(const tsumo of [false,true]){
   const param=Majiang.Util.hule_param({rule:RULE,zhuangfeng:room.roundWind||0,menfeng:seat,lizhi:p.riichi?(p.doubleRiichi?2:1):0,baopai:[],fubaopai:[]});
+  if(!tsumo&&kyokaSuit(room,seat,tile,(seat+1)%playerCount(room)))param.extraYakuman=[{name:'경화수월',fanshu:'*'}];
   const result=scoreHand(room,p,shape(tsumo?p.hand.concat(tile):p.hand,p.melds||[],seat),tsumo?null:code(tile)+direction(seat,(seat+1)%playerCount(room)),param);
   const yaku=(result?.hupai||[]).map(y=>({name:NAMES[y.name]||y.name,han:typeof y.fanshu==='number'?y.fanshu:0,yakuman:typeof y.fanshu==='string'?y.fanshu.length:0}));
   scenarios.push({tile,method:tsumo?'쯔모':'론',yaku,han:result?.fanshu||0,yakuman:result?.damanguan||0});
