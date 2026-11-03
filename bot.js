@@ -22,7 +22,7 @@ function shanten(counts, openMelds = 0) {
   return result;
 }
 
-function chooseDiscard(hand, discards = []) {
+function chooseDiscard(hand, discards = [], sanma = false) {
   if (!hand.length) throw new Error('Bot hand is empty');
   const counts = countsOf(hand);
   const visible = countsOf(hand.concat(discards.map(d=>d.tile)));
@@ -37,7 +37,7 @@ function chooseDiscard(hand, discards = []) {
     const {i}=candidate;
     counts[i]--;
     let outs=0;
-    for(let draw=0;draw<34;draw++) if(visible[draw]<4) {
+    for(let draw=0;draw<34;draw++) if(visible[draw]<4 && (!sanma || draw<1 || draw>7)) {
       counts[draw]++;
       if(shanten(counts)<minimum) outs+=4-visible[draw];
       counts[draw]--;

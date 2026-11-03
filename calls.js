@@ -1,13 +1,14 @@
+const {isSanma,playerCount}=require('./rules');
 const { randomUUID } = require('crypto');
 const { evaluateWin, waits } = require('./scoring');
 const { replacement } = require('./kongs');
-function optionsFor(hand, tile, seat, from, canKan) {
+function optionsFor(hand, tile, seat, from, canKan, canChi = true) {
   const options=[];
   const count=hand.filter(t=>t===tile).length;
   if(count>=2) options.push({type:'pon',consume:[tile,tile],banned:[tile]});
   if(count>=3 && canKan) options.push({type:'kan',consume:[tile,tile,tile],banned:[]});
   const n=Number(tile[0]), suit=tile.slice(-1);
-  if(seat===(from+1)%4 && n && ['만','통','삭'].includes(suit)) {
+  if(canChi && seat===(from+1)%4 && n && ['만','통','삭'].includes(suit)) {
     for(let start=n-2;start<=n;start++) {
       if(start<1 || start>7) continue;
       const consume=[start,start+1,start+2].filter(v=>v!==n).map(v=>`${v}${suit}`);
@@ -30,7 +31,7 @@ function openWindow(room, from, tile) {
   const offers={};
   room.players.forEach((p,seat)=>{
     if(seat===from) return;
-    const choices= !p.riichi && room.wall.length ? optionsFor(p.hand,tile,seat,from,(room.kanCount||0)<4 && room.deadWall.length>0) : [];
+    const choices= !p.riichi && room.wall.length ? optionsFor(p.hand,tile,seat,from,(room.kanCount||0)<4 && room.deadWall.length>0,!isSanma(room)) : [];
     if(evaluateWin(room,seat,{tile,from})) choices.unshift({id:"ron",type:"ron",consume:[],banned:[]});
     // Even an otherwise complete hand without a yaku creates same-turn furiten.
     // No ron button is offered, but a later houtei/chankan must not bypass it.
@@ -38,11 +39,11 @@ function openWindow(room, from, tile) {
     if(choices.length) offers[seat]=choices;
   });
   if(!Object.keys(offers).length) return null;
-  return {id:randomUUID(),from,tile,index:room.discards.length-1,offers,responses:{}};
+  return {id:randomUUID(),from,tile,playerCount:playerCount(room),index:room.discards.length-1,offers,responses:{}};
 }
 function winner(window) {
   return Object.entries(window.responses).filter(([,choice])=>choice!==null).map(([seat,id])=>({seat:Number(seat),option:window.offers[seat].find(o=>o.id===id)})).sort((a,b)=>
-    ({ron:0,pon:1,kan:1,chi:2}[a.option.type])-({ron:0,pon:1,kan:1,chi:2}[b.option.type]) || (a.seat-window.from+4)%4-(b.seat-window.from+4)%4
+    ({ron:0,pon:1,kan:1,chi:2}[a.option.type])-({ron:0,pon:1,kan:1,chi:2}[b.option.type]) || (a.seat-window.from+(window.playerCount||4))%(window.playerCount||4)-(b.seat-window.from+(window.playerCount||4))%(window.playerCount||4)
   )[0] || null;
 }
 function applyCall(room, window, choice) {

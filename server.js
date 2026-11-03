@@ -1,3 +1,5 @@
+const {isSanma,playerCount,initialScore,allowedTile}=require('./rules');
+const north=require('./north');
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -43,7 +45,8 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     socket.join(room.code);
     socket.data.room = room.code;
     assignHost(room);
-    callback?.({ ok: true, code: room.code, token: player.token });
+    callback?.({ ok: true, code: room.code,
+      playerCount: playerCount(room), token: player.token });
     // Send identity and a complete snapshot before the public room update.
     resolveCalls(room);
     sendAllPrivateStates(room);
@@ -78,12 +81,12 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     return tiles;
   }
 
-  // 34종 × 4장 = 136장
-  function makeWall() {
+  // 4인 136장 / 3인 108장 (2~8만 제외)
+  function makeWall(room) {
     const tiles = [];
     for (const suit of ["만", "통", "삭"]) {
       for (let n = 1; n <= 9; n++) {
-        for (let copy = 0; copy < 4; copy++) tiles.push(`${n}${suit}`);
+        if(allowedTile(`${n}${suit}`,isSanma(room))) for (let copy = 0; copy < 4; copy++) tiles.push(`${n}${suit}`);
       }
     }
     for (const honor of ["동", "남", "서", "북", "백", "발", "중"]) {
@@ -95,6 +98,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   function publicRoom(room) {
     return {
       code: room.code,
+      playerCount: playerCount(room),
       started: room.started,
       paused: room.started && room.players.some(p => !p.connected),
       message: room.message || "",
@@ -108,9 +112,10 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
         seat,
         wind: WINDS[seat],
         host: p.id === room.hostId,
-        score: p.score ?? 25000,
+        score: p.score ?? initialScore(room),
         riichi: Boolean(p.riichi),
         melds: p.melds || [],
+        nuki: p.nuki || 0,
         bot: Boolean(p.bot),
         connected: p.connected
       })),
@@ -129,6 +134,9 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     const player = room.players[seat];
 
     io.to(socketId).emit("game:private", {
+      playerCount: playerCount(room),
+      nuki: room.players.map(p=>p.nuki||0),
+      canNuki: north.canExtract(room,seat),
       waits: room.started ? waits(player) : [],
       waitDetails: room.started ? waitDetails(room,seat) : [],
       waitYaku: room.started ? waitYakuGuide(room,seat) : null,
@@ -159,10 +167,11 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   }
 
   function startGame(room) {
-    const shuffled = dealWall ? dealWall() : makeWall();
+    const shuffled = dealWall ? dealWall(room) : makeWall(room);
 
     // 왕패: 영상패 4장과 도라·우라도라 표시패 각 5장.
     room.deadWall = shuffled.slice(0, 14);
+    room.replacementTiles = room.deadWall.slice(0,4);
     room.wall = shuffled.slice(14); // 배패 전 122장, 4인 배패 후 70장
 
     room.doraIndicators=[4,6,8,10,12].map(i=>room.deadWall[i]);
@@ -179,12 +188,13 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     room.players.forEach(player => {
       player.hand = room.wall.splice(0, 13);
       player.melds = [];
+      player.sanma=isSanma(room);player.nuki=0;player.nukiDraw=false;
       player.banned = [];
       player.drawn = null;
       player.riichi = false;
       player.doubleRiichi=false;player.ippatsu=false;player.rinshan=false;
       player.temporaryFuriten=false;player.riichiFuriten=false;
-      player.score ??= 25000;
+      player.score ??= initialScore(room);
     });
 
     // 동가는 처음부터 14장. 방장 승계는 좌석 순서를 바꾸지 않는다.
@@ -203,8 +213,8 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     player.hand.splice(tileIndex, 1);
     room.discards.push({ tile, seat, riichi: riichiDeclaration });
 
-    room.lastDiscardRinshan=Boolean(player.rinshan);
-    player.rinshan=false;
+    room.lastDiscardRinshan=Boolean(player.rinshan||player.nukiDraw);
+    player.rinshan=false;player.nukiDraw=false;
     if(!riichiDeclaration)player.ippatsu=false;
     player.drawn = null;
     player.banned = [];
@@ -233,9 +243,9 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       endDraw(room);
       return;
     }
-    room.turn = (from + 1) % 4;
+    room.turn = (from + 1) % playerCount(room);
     const p = room.players[room.turn];
-    p.temporaryFuriten=false;p.rinshan=false;
+    p.temporaryFuriten=false;p.rinshan=false;p.nukiDraw=false;
     p.drawn = room.wall.pop();
     p.hand.push(p.drawn);
   }
@@ -243,15 +253,16 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   function resolveCalls(room) {
     const w = room.pendingCall;
     if (!w || room.players.some(p => !p.connected) || Object.keys(w.offers).some(seat => !Object.hasOwn(w.responses,seat))) return;
-    const rons=Object.keys(w.responses).map(Number).filter(seat=>w.responses[seat]==='ron').sort((a,b)=>(a-w.from+4)%4-(b-w.from+4)%4);
+    const rons=Object.keys(w.responses).map(Number).filter(seat=>w.responses[seat]==='ron').sort((a,b)=>(a-w.from+playerCount(room))%playerCount(room)-(b-w.from+playerCount(room))%playerCount(room));
     if(rons.length===3){endDraw(room,'삼가화 (3인 론)');return;}
     if(rons.length){
-      if(settleWins(room,rons,{tile:w.tile,from:w.from,robKan:w.kind==='kan',robAnkan:w.kanOption?.type==='ankan'})) {
-        if(w.kind==='kan')room.players[w.from].hand.splice(room.players[w.from].hand.indexOf(w.tile),1);
+      if(settleWins(room,rons,{tile:w.tile,from:w.from,robKan:w.kind==='kan'||w.kind==='nuki',robAnkan:w.kind==='nuki'||w.kanOption?.type==='ankan'})) {
+        if(w.kind==='kan'||w.kind==='nuki')room.players[w.from].hand.splice(room.players[w.from].hand.indexOf(w.tile),1);
         return;
       }
     }
-    if(w.kind==='kan')kongs.apply(room,w.from,w.kanOption);
+    if(w.kind==='nuki')north.apply(room,w.from);
+    else if(w.kind==='kan')kongs.apply(room,w.from,w.kanOption);
     else {
       const selected = winner(w);
       if (selected) {
@@ -260,6 +271,20 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       } else advance(room,w.from);
     }
     room.pendingCall = null;
+  }
+
+  function extractNorth(room,seat){
+    const offers={};
+    room.players.forEach((p,i)=>{
+      // Only kokushi can rob an extracted North, with no chankan bonus.
+      if(i!==seat&&evaluateWin(room,i,{tile:'북',from:seat,robKan:true,robAnkan:true}))offers[i]=[{id:'ron',type:'ron',consume:[],banned:[]}];
+    });
+    if(Object.keys(offers).length){
+      room.pendingCall={id:randomUUID(),kind:'nuki',from:seat,tile:'북',index:-1,offers,responses:{}};
+      for(const key of Object.keys(offers))if(room.players[key].bot)room.pendingCall.responses[key]='ron';
+      resolveCalls(room);
+    }else north.apply(room,seat);
+    sendAllPrivateStates(room);sendRoom(room);scheduleBot(room);
   }
 
   function scheduleBot(room) {
@@ -272,8 +297,9 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       if(evaluateWin(room,room.turn,{tile:player.drawn})){
         settleWins(room,[room.turn],{tile:player.drawn});sendAllPrivateStates(room);sendRoom(room);return;
       }
+      if(north.canExtract(room,room.turn)){extractNorth(room,room.turn);return;}
       const candidates = riichiDiscards(room,room.turn);
-      const tile = player.riichi ? player.drawn : candidates[0] || chooseDiscard(player.hand, room.discards);
+      const tile = player.riichi ? player.drawn : candidates[0] || chooseDiscard(player.hand, room.discards,isSanma(room));
       const declared = !player.riichi && candidates.length > 0 && declareRiichi(room,room.turn,tile);
       discard(room, room.turn, tile, Boolean(declared));
     }, botDelayMs);
@@ -281,12 +307,14 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   }
 
   io.on("connection", socket => {
-    socket.on("room:create", ({ name } = {}, callback) => {
+    socket.on("room:create", ({ name, playerCount: count = 4 } = {}, callback) => {
       if (alreadyJoined(socket, callback)) return;
+      if(count!==3&&count!==4)return callback?.({ok:false,error:"3인 또는 4인 모드를 선택해 주세요."});
       const code = makeCode();
       const player = makePlayer(socket, name);
       const room = {
         code,
+        playerCount: count,
         players: [player],
         hostId: player.id,
         started: false,
@@ -296,6 +324,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
         discards: []
       };
 
+      player.score=initialScore(room);
       rooms.set(code, room);
       attach(socket, room, player, callback);
     });
@@ -307,9 +336,10 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
 
       if (!room) return callback?.({ ok: false, error: "존재하지 않는 방 코드야." });
       if (room.started) return callback?.({ ok: false, error: "이미 게임이 시작된 방이야." });
-      if (room.players.length >= 4) return callback?.({ ok: false, error: "방이 가득 찼어." });
+      if (room.players.length >= playerCount(room)) return callback?.({ ok: false, error: "방이 가득 찼어." });
 
       const player = makePlayer(socket, name);
+      player.score=initialScore(room);
       room.players.push(player);
 
       attach(socket, room, player, callback);
@@ -337,7 +367,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       if (!room || !room.players.some(p => p.id === room.hostId && p.socketId === socket.id)) return callback?.({ ok:false, error:"방장만 봇을 설정할 수 있어." });
       if (room.started) return callback?.({ ok:false, error:"대기실에서만 봇을 설정할 수 있어." });
       if (fill === true) {
-        while (room.players.length < 4) room.players.push({ id:randomUUID(), bot:true, name:`연습봇 ${room.players.length}`, connected:true, score:25000, hand:[] });
+        while (room.players.length < playerCount(room)) room.players.push({ id:randomUUID(), bot:true, name:`연습봇 ${room.players.length}`, connected:true, score:initialScore(room), hand:[] });
       } else if (fill === false) {
         room.players = room.players.filter(p => !p.bot);
       } else return callback?.({ok:false,error:"봇 설정을 확인해 줘."});
@@ -351,7 +381,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
 
       if (!room) return callback?.({ ok: false, error: "방을 찾을 수 없어." });
       if (!room.players.some(p => p.id === room.hostId && p.socketId === socket.id)) return callback?.({ ok: false, error: "방장만 시작할 수 있어." });
-      if (room.players.length !== 4 || room.players.some(p => !p.connected)) return callback?.({ ok: false, error: "게임을 시작하려면 4명 모두 접속해야 해." });
+      if (room.players.length !== playerCount(room) || room.players.some(p => !p.connected)) return callback?.({ ok: false, error: `게임을 시작하려면 ${playerCount(room)}명 모두 접속해야 해.` });
       if (room.started) return callback?.({ ok: false, error: "이미 시작된 게임이야." });
 
       startGame(room);
@@ -383,6 +413,13 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       if(!room?.started || room.pendingCall || seat!==room.turn || room.players.some(p=>!p.connected))return callback?.({ok:false,error:"지금은 쯔모할 수 없어요."});
       if(!settleWins(room,[seat],{tile:room.players[seat].drawn}))return callback?.({ok:false,error:"완성형과 역이 필요합니다."});
       clearTimeout(room.botTimer);sendAllPrivateStates(room);sendRoom(room);callback?.({ok:true});
+    });
+
+    socket.on("game:nuki", callback => {
+      const room=rooms.get(socket.data.room);
+      const seat=room?.players.findIndex(p=>p.socketId===socket.id);
+      if(!room||seat<0||room.players.some(p=>!p.connected)||!north.canExtract(room,seat))return callback?.({ok:false,error:"내 쯔모 차례에 북을 뺄 수 있어요. 리치 후에는 뽑은 북만 가능합니다."});
+      extractNorth(room,seat);callback?.({ok:true});
     });
 
     socket.on("game:kan", ({id}={}, callback) => {
@@ -428,7 +465,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
 
       if (player.riichi && tile !== player.drawn) return callback?.({ok:false,error:"리치 후에는 방금 뽑은 패만 버릴 수 있어요."});
       if (riichi !== false && riichi !== true) return callback?.({ok:false,error:"리치 요청을 확인해 주세요."});
-      if (riichi && !declareRiichi(room,seat,tile)) return callback?.({ok:false,error:"멘젠 텐파이·1,000점 이상·남은 패 4장 이상일 때 리치할 수 있어요."});
+      if (riichi && !declareRiichi(room,seat,tile)) return callback?.({ok:false,error:"멘젠 텐파이·1,000점 이상·충분한 남은 패가 있을 때 리치할 수 있어요."});
       discard(room, seat, tile, riichi);
       callback?.({ ok: true });
     });

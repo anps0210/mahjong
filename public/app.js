@@ -4,6 +4,9 @@ const socket = io({ autoConnect: false });
 const $ = id => document.getElementById(id);
 
 let roomCode = null;
+let gamePlayerCount = 4;
+let publicNuki = [];
+let canNuki = false;
 let myHand = [];
 let selectedHandIndex = null;
 let discardOrigin = null;
@@ -45,11 +48,12 @@ function saveSession(value) {
 function controls() {
   $("create").disabled = $("join").disabled = !ready || pending;
   $("start").disabled = !ready || pending || !roomState || roomState.started ||
-    !roomState.players[mySeat]?.host || roomState.players.length !== 4 ||
+    !roomState.players[mySeat]?.host || roomState.players.length !== (roomState.playerCount||4) ||
     roomState.players.some(p => !p.connected);
-  $("fillBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || roomState.players.length >= 4;
+  $("fillBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || roomState.players.length >= (roomState.playerCount||4);
   $("removeBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || !roomState.players.some(p => p.bot);
   $("callPanel").querySelectorAll("button").forEach(b => { b.disabled = !ready || pending || roomState?.paused || callState?.answered; });
+  $("nukiButton").disabled = !ready || pending || !canNuki || roomState?.paused || waitingCall;
   $("tsumoButton").disabled = !ready || pending || !canTsumo || roomState?.paused || waitingCall;
   $("selfKanActions").querySelectorAll("button").forEach(b=>b.disabled=!ready||pending||roomState?.paused||waitingCall);
   $("riichiButton").disabled = !ready || pending || !roomState?.started || roomState.paused || waitingCall || currentTurn !== mySeat || ownRiichi || !riichiChoices.length;
@@ -106,7 +110,7 @@ function err(id, msg) {
 }
 
 $("create").onclick = () => {
-  request("room:create", { name: name() }, res => {
+  request("room:create", { name: name(), playerCount:Number($("playerCount").value) }, res => {
     if (!res?.ok)
       return err("homeError", "방 생성에 실패했어.");
 
@@ -151,6 +155,7 @@ $("start").onclick = () => {
 socket.on("room:update", room => {
   if (room.code !== roomCode) return;
   roomState = room;
+  gamePlayerCount=room.playerCount||4;
   renderResult(room);
   $("doraIndicators").innerHTML = `<small>도라 표시패</small>${(room.doraIndicators||[]).map(t=>tileFace(t)).join("")}`;
   if (room.paused || !room.started) selectedHandIndex = null;
@@ -159,7 +164,8 @@ socket.on("room:update", room => {
   renderTurn();
 
   $("count").textContent =
-    `${room.players.length}/4`;
+    `${room.players.length}/${gamePlayerCount}`;
+  $("modeRules").textContent=gamePlayerCount===3?"3인 · 35,000점 시작 · 2~8만 제외 · 치 없음 · 북 빼기도라 · 쯔모 손실 · 노텐 벌부 2,000점":"4명이 모이면 방장이 게임을 시작할 수 있어.";
 
   $("players").innerHTML = room.players.map((p, i) =>
     `<div class="player">
@@ -186,6 +192,10 @@ socket.on("room:update", room => {
 socket.on("game:private", s => {
   selectedHandIndex = null;
   myHand = s.hand;
+  gamePlayerCount=s.playerCount||4;
+  publicNuki=s.nuki||[];
+  canNuki=Boolean(s.canNuki);
+  $("nukiButton").classList.toggle("hidden", !canNuki);
   canTsumo = s.canTsumo;
   kanChoices = s.kanOptions || [];
   $("tsumoButton").classList.toggle("hidden", !canTsumo);
@@ -278,17 +288,21 @@ function renderHand() {
   controls();
 }
 $("sortHand").onchange = () => { selectedHandIndex = null; renderHand(); renderDiscards(); renderTurn(); };
+// Keep the square table. Sanma uses bottom/right/left and leaves the far side empty.
+function seatLayout(){
+ const places=gamePlayerCount===3?['bottom','right','left']:positions;
+ return places.map((position,offset)=>({seat:(Math.max(0,mySeat)+offset)%gamePlayerCount,position}));
+}
 function renderDiscards() {
-  const riverMarkup = [0,1,2,3].map(offset => {
-    const seat = (Math.max(0,mySeat)+offset)%4;
+  const riverMarkup = seatLayout().map(({seat,position}) => {
     const tiles = lastDiscards.map((d,i)=>({...d,index:i})).filter(d=>d.seat===seat);
-    return `<section class="river-zone ${positions[offset]}"><div class="river-label"><b>${winds[seat]}가${seat===mySeat?" · 나":""}</b><span>${escapeHtml(roomState?.players[seat]?.name||"")}${roomState?.players[seat]?.riichi?" · 리치":""}${roomState?.players[seat]?.connected===false?" · 연결 끊김":""}</span></div><div class="river ${positions[offset]}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${selectedHandIndex !== null && d.tile === myHand[selectedHandIndex] ? 'matching-tile' : ''} ${d.riichi ? 'riichi-discard' : ''} ${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div></section>`;
+    return `<section class="river-zone ${position}"><div class="river-label"><b>${winds[seat]}가${seat===mySeat?" · 나":""}</b><span>${escapeHtml(roomState?.players[seat]?.name||"")}${roomState?.players[seat]?.riichi?" · 리치":""}${roomState?.players[seat]?.connected===false?" · 연결 끊김":""}</span></div><div class="river ${position}" aria-label="${winds[seat]}가 버림패">${tiles.map(d=>tileFace(d.tile,`${selectedHandIndex !== null && d.tile === myHand[selectedHandIndex] ? 'matching-tile' : ''} ${d.riichi ? 'riichi-discard' : ''} ${d.calledBy !== undefined ? 'claimed' : ''} ${d.index===lastDiscards.length-1?'latest':''} ${callState && !callState.answered && callState.options.length && d.index===callState.index?'callable':''}`)).join("")}</div></section>`;
   }).join("");
   if(renderDiscards.lastMarkup===riverMarkup)return;
   renderDiscards.lastMarkup=riverMarkup;
   // Preserve existing 3D tile elements; only append or update changed discards.
   const template=document.createElement('template');template.innerHTML=riverMarkup;
-  if($("discards").children.length!==4) $("discards").replaceChildren(template.content.cloneNode(true));
+  if($("discards").children.length!==gamePlayerCount) $("discards").replaceChildren(template.content.cloneNode(true));
   else [...template.content.children].forEach((fresh,i)=>{
     const existing=$("discards").children[i];
     const label=existing.querySelector('.river-label'),nextLabel=fresh.querySelector('.river-label');
@@ -317,14 +331,14 @@ function renderCalls() {
   panel.querySelectorAll('button').forEach(b=>b.onclick=()=>request('game:call',{id:callState.id,choice:b.dataset.choice==='skip'?null:b.dataset.choice},res=>{if(res?.error) $("gameMessage").textContent=res.error;}));
 }
 function renderMelds() {
-  $("melds").innerHTML = [0,1,2,3].map(offset=>{
-    const seat=(Math.max(0,mySeat)+offset)%4;
+  $("melds").innerHTML = seatLayout().map(({seat})=>{
     const melds=publicMelds[seat] || [];
-    if(!melds.length) return '';
-    return `<div class="meld-row"><strong>${winds[seat]}가${seat===mySeat?' · 나':''}</strong>${melds.map(m=>`<div class="meld-group" aria-label="${m.type==='ankan'?'멘젠':winds[m.from]+'가'}에서 ${m.type}"><small>${{chi:'치',pon:'퐁',kan:'깡',ron:'론',ankan:'암깡',kakan:'가깡'}[m.type]} · ${m.type==='ankan'?'멘젠':winds[m.from]+'가'}</small><div>${m.tiles.map(t=>tileFace(t)).join('')}</div></div>`).join('')}</div>`;
+    if(!melds.length&&!publicNuki[seat]) return '';
+    return `<div class="meld-row"><strong>${winds[seat]}가${seat===mySeat?' · 나':''}</strong>${publicNuki[seat]?`<span class="nuki-count">북 × ${publicNuki[seat]} · 빼기도라</span>`:''}${melds.map(m=>`<div class="meld-group" aria-label="${m.type==='ankan'?'멘젠':winds[m.from]+'가'}에서 ${m.type}"><small>${{chi:'치',pon:'퐁',kan:'깡',ron:'론',ankan:'암깡',kakan:'가깡'}[m.type]} · ${m.type==='ankan'?'멘젠':winds[m.from]+'가'}</small><div>${m.tiles.map(t=>tileFace(t)).join('')}</div></div>`).join('')}</div>`;
   }).join('');
 }
 
+$("nukiButton").onclick = () => request("game:nuki",undefined,res=>{if(res?.error)$("gameMessage").textContent=res.error;});
 $("tsumoButton").onclick = () => request("game:tsumo",undefined,res=>{if(res?.error)$("gameMessage").textContent=res.error;});
 function renderResult(room) {
   const panel=$("roundResult"),r=room.result;
@@ -355,7 +369,7 @@ function renderTurn() {
   $("turnText").textContent = roomState?.paused ? "복귀 대기" : waitingCall ? "론·부로 선택 중" : currentTurn === mySeat ? "내 차례" : `플레이어 ${currentTurn + 1} 차례`;
   $("turnText").classList.toggle("my-turn",currentTurn===mySeat && !roomState?.paused && !waitingCall);
   $("handHint").textContent = roomState?.paused ? "참가자의 재접속을 기다리고 있어요" : waitingCall ? "론·치·퐁·깡 또는 스킵을 선택하세요" : selectedHandIndex !== null ? currentTurn!==mySeat?`${myHand[selectedHandIndex]} 선택 · 내 차례에 버릴 수 있어요`:`${myHand[selectedHandIndex]} · 한 번 더 누르면 ${choosingRiichi ? "리치 선언" : "버립니다"}` : choosingRiichi ? "강조된 패를 두 번 눌러 리치하세요" : ownRiichi && currentTurn===mySeat ? "쯔모패를 두 번 눌러 버리세요" : currentTurn===mySeat ? "한 번 선택 · 다시 눌러 버리기" : "다른 플레이어의 차례입니다";
-  const seatOrder = [0,1,2,3].map(offset => ({seat:(Math.max(0,mySeat)+offset)%4,position:positions[offset]}));
+  const seatOrder = seatLayout();
   $("seats").innerHTML = seatOrder.map(({seat,position}) => {
     const p=roomState?.players[seat];
     return `<div class="seat ${position} ${seat===currentTurn?'active':''} ${p && !p.connected?'offline':''}"><span class="wind-badge">${winds[seat]}</span><div><strong>${escapeHtml(p?.name || `플레이어 ${seat+1}`)}${p?.bot?' · 봇':seat===mySeat?' · 나':''}</strong><small>${p && !p.connected?'연결 끊김':p?.riichi?'리치':seat===mySeat?'내 자리':''}</small></div></div>`;
@@ -470,11 +484,12 @@ function animateDiscard(discard) {
   discardOrigin = null;
   if (!window.requestAnimationFrame || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
   requestAnimationFrame(() => {
-    const offset = (discard.seat - mySeat + 4) % 4;
-    const target = document.querySelector(`.river.${positions[offset]} .tile:last-child`);
+    const position=seatLayout().find(p=>p.seat===discard.seat)?.position;
+    const offset=positions.indexOf(position);
+    const target = document.querySelector(`.river.${position} .tile:last-child`);
     if (!target || typeof target.animate !== 'function') return;
     const end = (target.querySelector('img') || target).getBoundingClientRect();
-    const seat = document.querySelector(`.seat.${positions[offset]}`);
+    const seat = document.querySelector(`.seat.${position}`);
     const start = origin || seat?.getBoundingClientRect() || end;
     const ghost = document.createElement('div');
     ghost.className = 'discard-flight';
