@@ -31,7 +31,7 @@ function startKyoka(room){
  else node.querySelector('img').onerror=e=>{e.currentTarget.hidden=true;};
  document.body.append(node);
  document.querySelector('main').inert=true;
- kyokaActive={node,resultId:room.result.id,timer:setTimeout(finishKyoka,furioso?11300:8800)};
+ kyokaActive={node,resultId:room.result.id,timer:setTimeout(finishKyoka,furioso?15300:8800)};
  node.querySelector('button').onclick=finishKyoka;
  node.querySelector('button').focus({preventScroll:true});
  node.addEventListener('keydown',e=>{if(e.key==='Escape')finishKyoka();});
@@ -39,6 +39,29 @@ function startKyoka(room){
 }
 
 function furiosoSlashes(){
- const cuts=['M80 80 Q470 330 960 540','M950 45 Q490 340 70 550','M-70 350 Q490 190 1090 275','M340 -70 Q530 280 670 690','M1140 -100 Q470 300 -120 690'];
- return '<svg class="furioso-cuts" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">'+cuts.map((d,i)=>`<g class="furioso-cut ${i===4?'finisher':''}" style="--cut-delay:${i===4?7.7:6.8+i*.2}s"><path class="slash-glow" pathLength="100" d="${d}"/><path class="slash-edge" pathLength="100" d="${d}"/></g>`).join('')+'</svg><p class="furioso-complete"><em>[비프음]</em> 대행 완료.</p>';
+ // Quadratic paths also locate the petals along the actual slash, rather than across the screen at random.
+ const cuts=[
+  {at:6.8,p:[80,80,470,330,960,540]},
+  {at:6.98,p:[950,45,490,340,70,550]},
+  {at:7.16,p:[-70,350,490,190,1090,275]},
+  {at:7.34,p:[340,-70,530,280,670,690]},
+  {at:7.65,p:[-100,620,490,220,1100,-40],kind:'heavy'},
+  {at:8.12,p:[-80,140,480,400,1080,480]},
+  {at:8.3,p:[900,-80,520,290,180,680]},
+  {at:10.04,p:[1140,-100,470,300,-120,690],kind:'finisher'}
+ ];
+ const colors=['#c6f7ff','#168dff','#164ba6'];
+ const slashes=cuts.map(({at,p,kind=''})=>{
+  const d=`M${p[0]} ${p[1]} Q${p[2]} ${p[3]} ${p[4]} ${p[5]}`;
+  const count=kind==='finisher'?32:kind==='heavy'?22:14;
+  const petals=Array.from({length:count},(_,i)=>{
+   const t=(i+1)/(count+1),u=1-t;
+   const x=u*u*p[0]+2*u*t*p[2]+t*t*p[4],y=u*u*p[1]+2*u*t*p[3]+t*t*p[5];
+   const dx=((i*47)%137-68)*(kind==='finisher'?2:1),dy=30+(i*31)%100;
+   return `<g transform="translate(${x} ${y})"><path class="furioso-petal" d="M0 -8 C9 -6 9 4 0 9 C-5 4 -6 -3 0 -8Z" fill="${colors[i%3]}" style="--petal-delay:${at+.06+t*.04}s;--petal-life:${kind==='finisher'?1.9:.85}s;--dx:${dx}px;--dy:${dy}px;--spin:${i%2?240:-210}deg;--size:${.6+(i%4)*.22}"/></g>`;
+  }).join('');
+  return `<g class="furioso-impact ${kind}" style="--cut-delay:${at}s"><g class="furioso-cut ${kind}"><path class="slash-glow" pathLength="100" d="${d}"/><path class="slash-edge" pathLength="100" d="${d}"/></g></g>${petals}`;
+ }).join('');
+ return '<svg class="furioso-cuts" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">'+slashes+
+ '<g class="furioso-cross"><path class="cross-halo" d="M360 300H640M500 175V425"/><path class="cross-core" d="M360 300H640M500 175V425"/><circle cx="500" cy="300" r="8" fill="#fff"/></g></svg><p class="furioso-complete"><em>[비프음]</em> 대행 완료.</p>';
 }
