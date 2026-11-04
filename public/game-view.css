@@ -541,3 +541,14 @@ body.in-game { background:#101b29; }
 @media (orientation:landscape) and (max-width:900px) {
  .meld-seat.bottom { left:43%; }
 }
+.voice-settings { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:12px; margin-bottom:14px; border:1px solid #456057; border-radius:12px; background:#1b2b27; }
+.voice-settings label { margin:0; }
+#voiceCharacter { display:block; padding:8px; margin-top:5px; background:#101b19; color:#fff; border:1px solid #567064; border-radius:8px; }
+.voice-import { flex-basis:100%; }
+#voicePackFile { font-size:12px; padding:6px; }
+#voicePackStatus { margin:0; color:#b8c7bf; font-size:12px; }
+.in-game .voice-settings { display:none; }
+#voiceToggle { position:absolute; top:8px; right:185px; z-index:30; padding:5px 9px; font-size:11px; background:#e6f3ed; color:#245657; border-color:#7da8a1; }
+@media (orientation:landscape) and (max-width:700px) {
+ #voiceToggle { right:180px; padding:5px 6px; font-size:10px; }
+}
