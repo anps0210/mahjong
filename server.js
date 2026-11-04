@@ -8,7 +8,7 @@ const path = require("path");
 const { chooseDiscard } = require("./bot");
 const { openWindow, winner, applyCall } = require("./calls");
 const { riichiDiscards, declareRiichi, handShanten } = require("./riichi");
-const {evaluateWin,settleWins,endDraw,isFuriten,indicators,waits,waitDetails,waitYakuGuide}=require("./scoring");
+const {evaluateWin,settleWins,endDraw,isFuriten,indicators,waits,waitDetails,waitYakuGuide,forceFuriosoTest}=require("./scoring");
 const kongs=require("./kongs");
 const VOICES=["milk","03","02","01"];
 
@@ -430,6 +430,15 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       sendRoom(room);
       scheduleBot(room);
       callback?.({ok:true});
+    });
+
+    socket.on("game:test-furioso", ({password}={},callback)=>{
+      const room=rooms.get(socket.data.room);
+      const seat=room?.players.findIndex(p=>p.socketId===socket.id);
+      if(!room?.started||seat<0||room.players[seat].id!==room.hostId||room.players.some((p,i)=>i!==seat&&!p.bot))return callback?.({ok:false,error:"방장이 혼자 봇과 대국 중인 연습방에서만 사용할 수 있어요."});
+      if(typeof password!=="string"||password!==(process.env.FURIOSO_TEST_PASSWORD||"anps"))return callback?.({ok:false,error:"비밀번호가 맞지 않습니다."});
+      clearTimeout(room.botTimer);forceFuriosoTest(room,seat);emitVoice(room,seat,"tsumo");
+      sendAllPrivateStates(room);sendRoom(room);callback?.({ok:true});
     });
 
     socket.on("game:tsumo", callback => {

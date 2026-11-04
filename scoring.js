@@ -39,8 +39,9 @@ function indicators(room){return (room.doraIndicators||[]).slice(0,1+(room.kanCo
 // Core's 1-man indicator points to 2-man; sanma wraps directly to 9-man.
 function indicatorCode(room,tile){return isSanma(room)&&tile==='1만'?'m8':code(tile);}
 function scoreHand(room,p,hand,ron,param){
- if(!isSanma(room))return Majiang.Util.hule(hand,ron,param);
- const nuki=p.nuki||0;
+ if(!isSanma(room)&&!param.extraYakuman?.length)return Majiang.Util.hule(hand,ron,param);
+ param.sanma=isSanma(room);
+ const nuki=isSanma(room)?p.nuki||0:0;
  param.extraBonuses=[];
  if(nuki){
   param.extraBonuses.push({name:'抜きドラ',fanshu:nuki});
@@ -56,6 +57,19 @@ function kyokaSuit(room,seat,tile,from){
  if(!isSanma(room)||from===null||!tile||!['통','삭'].includes(tile.slice(-1)))return null;
  const suit=tile.slice(-1);
  return room.discards.filter(d=>d.seat===seat&&d.tile.endsWith(suit)).length>=5?suit:null;
+}
+function furiosoSuit(room,seat,tile){
+ if(!/^9[만통삭]$/.test(tile||''))return null;
+ const suit=tile.slice(-1);
+ // Other suits and honors do not interrupt the order. Only this player's discards count.
+ const ranks=room.discards.filter(d=>d.seat===seat&&d.tile.endsWith(suit)).map(d=>Number(d.tile[0]));
+ return ranks.slice(-8).join('')==='12345678'?suit:null;
+}
+function customYakuman(room,seat,tile,from){
+ const out=[];
+ if(kyokaSuit(room,seat,tile,from))out.push({name:'경화수월',fanshu:'*'});
+ if(furiosoSuit(room,seat,tile))out.push({name:'Furioso-Replica',fanshu:'*'});
+ return out;
 }
 function evaluateWin(room,seat,{tile,from=null,robKan=false,robAnkan=false}={}){
  const p=room.players[seat],melds=p.melds||[],tsumo=from===null;
@@ -74,16 +88,21 @@ function evaluateWin(room,seat,{tile,from=null,robKan=false,robAnkan=false}={}){
   baopai:indicators(room).map(t=>indicatorCode(room,t)),fubaopai:p.riichi?(room.uraIndicators||[]).slice(0,1+(room.kanCount||0)).map(t=>indicatorCode(room,t)):[],
   changbang:room.honba||0,lizhibang:0});
  const specialSuit=kyokaSuit(room,seat,tile,from);
- if(specialSuit)param.extraYakuman=[{name:'경화수월',fanshu:'*'}];
+ const furioso=furiosoSuit(room,seat,tile);
+ param.extraYakuman=customYakuman(room,seat,tile,from);
  const result=scoreHand(room,p,shape(hand,melds,seat),tsumo?null:code(tile)+direction(seat,from),param);
  if(!result?.hupai?.length || !result.defen)return null;
  if(robAnkan&&!result.hupai.some(y=>y.name.startsWith('国士無双')))return null;
- return {seat,from,tile,special:specialSuit?{name:'경화수월',discardedSuit:specialSuit,apparentSuit:specialSuit==='통'?'삭수':'통수'}:null,method:tsumo?'tsumo':'ron',hand:tsumo?hand:hand.concat(tile),melds,
+ return {seat,from,tile,special:furioso?{name:'Furioso-Replica',suit:furioso}:specialSuit?{name:'경화수월',discardedSuit:specialSuit,apparentSuit:specialSuit==='통'?'삭수':'통수'}:null,method:tsumo?'tsumo':'ron',hand:tsumo?hand:hand.concat(tile),melds,
   yaku:result.hupai.map(y=>({name:NAMES[y.name]||y.name,han:typeof y.fanshu==='number'?y.fanshu:null,yakuman:typeof y.fanshu==='string'?y.fanshu.length:0})),
   han:result.fanshu||0,fu:result.fu||0,yakuman:result.damanguan||0,points:result.defen,deltas:result.fenpei};
 }
 function settleWins(room,seats,context={}){
  const results=seats.map(seat=>evaluateWin(room,seat,context));if(results.some(r=>!r))return false;
+ return applyWinResults(room,results,context);
+}
+function applyWinResults(room,results,context={}){
+ const seats=results.map(r=>r.seat);
  // A declaration discarded into ron never establishes riichi or its deposit.
  const last=room.discards.at(-1);
  if(context.from!==null && context.from!==undefined && !context.robKan && last?.riichi){const p=room.players[context.from];p.score+=1000;p.riichi=false;room.riichiPot--;}
@@ -124,7 +143,7 @@ function waitYakuGuide(room,seat){
  const p=waitingPlayer(room.players[seat]),tiles=waits({...p,sanma:isSanma(room)}),scenarios=[];
  for(const tile of tiles)for(const tsumo of [false,true]){
   const param=Majiang.Util.hule_param({rule:RULE,zhuangfeng:room.roundWind||0,menfeng:seat,lizhi:p.riichi?(p.doubleRiichi?2:1):0,baopai:[],fubaopai:[]});
-  if(!tsumo&&kyokaSuit(room,seat,tile,(seat+1)%playerCount(room)))param.extraYakuman=[{name:'경화수월',fanshu:'*'}];
+  param.extraYakuman=customYakuman(room,seat,tile,tsumo?null:(seat+1)%playerCount(room));
   const result=scoreHand(room,p,shape(tsumo?p.hand.concat(tile):p.hand,p.melds||[],seat),tsumo?null:code(tile)+direction(seat,(seat+1)%playerCount(room)),param);
   const yaku=(result?.hupai||[]).map(y=>({name:NAMES[y.name]||y.name,han:typeof y.fanshu==='number'?y.fanshu:0,yakuman:typeof y.fanshu==='string'?y.fanshu.length:0}));
   scenarios.push({tile,method:tsumo?'쯔모':'론',yaku,han:result?.fanshu||0,yakuman:result?.damanguan||0});
@@ -149,3 +168,12 @@ function waitingPlayer(player){
  }
  return player;
 }
+
+// Only the server's authenticated solo-practice handler may invoke this bypass.
+function forceFuriosoTest(room,seat){
+ const p=room.players[seat],deltas=Array(playerCount(room)).fill(0);
+ room.players.forEach((_,i)=>{if(i!==seat){const pay=seat===0||i===0?16000:8000;deltas[i]-=pay;deltas[seat]+=pay;}});
+ const result={seat,from:null,tile:p.drawn||p.hand.at(-1)||null,method:'tsumo',hand:p.hand.slice(),melds:p.melds||[],special:{name:'Furioso-Replica'},yaku:[{name:'Furioso-Replica',han:null,yakuman:1}],han:0,fu:0,yakuman:1,points:deltas[seat],deltas};
+ applyWinResults(room,[result]);room.result.test=true;room.message='Furioso-Replica 테스트 화료';
+}
+module.exports.forceFuriosoTest=forceFuriosoTest;
