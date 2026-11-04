@@ -47,6 +47,7 @@ function saveSession(value) {
 
 function controls() {
   $("voiceCharacter").disabled = pending || Boolean(roomState && (!ready || roomState.started));
+  $("furiosoTestButton").disabled = !ready || pending || !roomState?.started || !roomState.players[mySeat]?.host || roomState.players.some((p,i)=>i!==mySeat&&!p.bot);
   $("create").disabled = $("join").disabled = !ready || pending;
   $("start").disabled = Boolean(kyokaActive) || !ready || pending || !roomState || roomState.started ||
     !roomState.players[mySeat]?.host || roomState.players.length !== (roomState.playerCount||4) ||
@@ -387,13 +388,21 @@ function renderMelds() {
 
 $("nukiButton").onclick = () => request("game:nuki",undefined,res=>{if(res?.error)$("gameMessage").textContent=res.error;});
 $("tsumoButton").onclick = () => request("game:tsumo",undefined,res=>{if(res?.error)$("gameMessage").textContent=res.error;});
+$("furiosoTestForm").onsubmit = e => {
+ e.preventDefault();
+ request("game:test-furioso",{password:$("furiosoPassword").value},res=>{
+  $("furiosoPassword").value='';
+  $("furiosoTestError").textContent=res?.error||'';
+  if(res?.ok)$("testMenu").open=false;
+ });
+};
 function renderResult(room) {
   if(startKyoka(room)){ $("roundResult").classList.add("hidden");return; }
   const panel=$("roundResult"),r=room.result;
   panel.classList.toggle("hidden",!r);
   if(!r){panel.innerHTML='';return;}
   const name=seat=>escapeHtml(r.names?.[seat]||room.players[seat]?.name||`플레이어 ${seat+1}`);
-  panel.innerHTML=`<h2>${r.type==='win'?'화료':r.nagashi?.length?'유국만관':'유국'}</h2>${r.type==='draw'?`<p>${escapeHtml(r.reason||'')} · ${r.nagashi?.length?'유국만관: '+r.nagashi.map(name).join(', '):'텐파이: '+((r.tenpai||[]).map(name).join(', ')||'없음')}</p>`:''}${(r.winners||[]).map(w=>`<article class="winner-result"><h3>${name(w.seat)} · ${w.method==='ron'?`론 (${name(w.from)})`:'쯔모'} · ${w.points.toLocaleString()}점</h3><p>${w.yakuman?`${w.yakuman}배 역만`:`${w.han}판 ${w.fu}부`}</p><ul>${w.yaku.map(y=>`<li>${escapeHtml(y.name)} <b>${y.yakuman?`${y.yakuman}배 역만`:`${y.han}판`}</b></li>`).join('')}</ul><div class="winning-hand">${w.hand.map(t=>tileFace(t)).join('')}${w.melds.map(m=>`<span class="result-meld">${m.tiles.map(t=>tileFace(t)).join('')}</span>`).join('')}</div></article>`).join('')}<div class="result-scores">${r.scores.map((score,i)=>`<div><strong>${name(i)}</strong><span>${score.toLocaleString()}점</span><b class="${r.deltas[i]>=0?'gain':'loss'}">${r.deltas[i]>0?'+':''}${r.deltas[i].toLocaleString()}</b></div>`).join('')}</div>${r.pot?`<p>리치 공탁금 ${r.pot.toLocaleString()}점 포함</p>`:''}${r.doraIndicators?.length?`<p>도라 표시패: ${r.doraIndicators.map(escapeHtml).join(' · ')}</p>`:''}${r.uraIndicators?.length?`<p>우라도라 표시패: ${r.uraIndicators.map(escapeHtml).join(' · ')}</p>`:''}`;
+  panel.innerHTML=`<h2>${r.test?'테스트 화료':r.type==='win'?'화료':r.nagashi?.length?'유국만관':'유국'}</h2>${r.type==='draw'?`<p>${escapeHtml(r.reason||'')} · ${r.nagashi?.length?'유국만관: '+r.nagashi.map(name).join(', '):'텐파이: '+((r.tenpai||[]).map(name).join(', ')||'없음')}</p>`:''}${(r.winners||[]).map(w=>`<article class="winner-result"><h3>${name(w.seat)} · ${w.method==='ron'?`론 (${name(w.from)})`:'쯔모'} · ${w.points.toLocaleString()}점</h3><p>${w.yakuman?`${w.yakuman}배 역만`:`${w.han}판 ${w.fu}부`}</p><ul>${w.yaku.map(y=>`<li>${escapeHtml(y.name)} <b>${y.yakuman?`${y.yakuman}배 역만`:`${y.han}판`}</b></li>`).join('')}</ul><div class="winning-hand">${w.hand.map(t=>tileFace(t)).join('')}${w.melds.map(m=>`<span class="result-meld">${m.tiles.map(t=>tileFace(t)).join('')}</span>`).join('')}</div></article>`).join('')}<div class="result-scores">${r.scores.map((score,i)=>`<div><strong>${name(i)}</strong><span>${score.toLocaleString()}점</span><b class="${r.deltas[i]>=0?'gain':'loss'}">${r.deltas[i]>0?'+':''}${r.deltas[i].toLocaleString()}</b></div>`).join('')}</div>${r.pot?`<p>리치 공탁금 ${r.pot.toLocaleString()}점 포함</p>`:''}${r.doraIndicators?.length?`<p>도라 표시패: ${r.doraIndicators.map(escapeHtml).join(' · ')}</p>`:''}${r.uraIndicators?.length?`<p>우라도라 표시패: ${r.uraIndicators.map(escapeHtml).join(' · ')}</p>`:''}`;
 }
 
 function renderShanten() {

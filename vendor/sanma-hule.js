@@ -1,5 +1,6 @@
 // Adapted from @kobalab/majiang-core 1.4.1 (MIT; see majiang-core.LICENSE).
-// Sanma adds bonus han before comparing decompositions, preserving best-score selection.
+// Adds custom yakuman and sanma bonus han before selecting the best decomposition.
+// Absent-seat payment removal is enabled only by param.sanma.
 /*
  *  Majiang.Util.hule
  */
@@ -704,7 +705,7 @@ function hule(shoupai, rongpai, param) {
         let hupai = get_hupai(mianzi, hudi, pre_hupai, post_hupai, param.rule);
         let rv    = get_defen(hudi.fu, hupai, rongpai, param);
 
-        if (rv.fenpei) {
+        if (param.sanma && rv.fenpei) {
             const absentPayment = -rv.fenpei[3];
             rv.fenpei[param.menfeng] -= absentPayment;
             rv.defen -= Math.max(0, absentPayment - (param.jicun.changbang || 0) * 100);
