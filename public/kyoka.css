@@ -15,14 +15,14 @@
  .kyoka-line,.kyoka-image { transform:none!important; }
 }
 
-.furioso-scene { animation:furioso-fade .4s ease-in 10.9s both; }
+.furioso-scene { animation:furioso-fade .4s ease-in 14.9s both; }
 .furioso-scene .kyoka-line.final { font-size:clamp(28px,5vw,64px); }
 .furioso-cuts { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
 .furioso-cut { opacity:0; animation:furioso-cut .28s ease-out var(--cut-delay) both; }
 .furioso-cut path { fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:100; stroke-dashoffset:100; animation:furioso-draw .09s cubic-bezier(.12,.7,.3,1) var(--cut-delay) both; }
 .furioso-cut .slash-glow { stroke:#008dff; stroke-width:13; filter:drop-shadow(0 0 12px #00aaff) drop-shadow(0 0 26px #0065ff); }
 .furioso-cut .slash-edge { stroke:#fff; stroke-width:9; filter:drop-shadow(0 0 3px #b2f7ff); }
-.furioso-cut.finisher { animation-duration:.4s; }
+.furioso-cut.finisher { animation-duration:1.65s; animation-name:furioso-final-cut; }
 .furioso-cut.finisher .slash-glow { stroke-width:50; filter:drop-shadow(0 0 25px #00d5ff) drop-shadow(0 0 55px #007bff); }
 .furioso-cut.finisher .slash-edge { stroke-width:36; }
 @keyframes furioso-cut { 0%{opacity:0} 12%,40%{opacity:1} 100%{opacity:0} }
@@ -33,10 +33,29 @@
  .furioso-cut .slash-glow { filter:none; opacity:.3; }
 }
 
-/* Final cut ends at 8.1s; leave a full second of black before the single-line caption. */
-.furioso-complete { position:absolute; top:12%; left:0; width:100%; margin:0; padding:0 12px; text-align:center; color:#4aaeff; font-family:Georgia,'Noto Serif KR',serif; font-size:clamp(14px,2.1vw,23px); font-style:normal; font-weight:400; letter-spacing:.02em; white-space:nowrap; opacity:0; animation:furioso-caption .15s ease-out 9.1s both; }
+/* Final petals end before 12.1s, then one second of black before the caption. */
+.furioso-complete { position:absolute; top:12%; left:0; width:100%; margin:0; padding:0 12px; text-align:center; color:#4aaeff; font-family:Georgia,'Noto Serif KR',serif; font-size:clamp(14px,2.1vw,23px); font-style:normal; font-weight:400; letter-spacing:.02em; white-space:nowrap; opacity:0; animation:furioso-caption .15s ease-out 13.1s both; }
 .furioso-complete em { font:inherit; font-style:italic; }
 @keyframes furioso-caption { from{opacity:0} to{opacity:1} }
 /* Keep the black pause visually empty, while keyboard Escape can still skip. */
-.furioso-scene .kyoka-skip { animation:furioso-hide-skip 0s step-end 8.1s forwards; }
+.furioso-scene .kyoka-skip { animation:furioso-hide-skip 0s step-end 9.3s forwards; }
 @keyframes furioso-hide-skip { to{opacity:0;pointer-events:none} }
+
+.furioso-impact { animation:furioso-impact .22s ease-out var(--cut-delay) both; transform-origin:center; }
+.furioso-impact.heavy { animation-duration:.32s; }
+.furioso-impact.finisher { animation-duration:.45s; }
+.furioso-cut.heavy { animation-duration:.42s; }
+.furioso-cut.heavy .slash-glow { stroke-width:28; }
+.furioso-cut.heavy .slash-edge { stroke-width:19; }
+.furioso-petal { opacity:0; transform-box:fill-box; transform-origin:center; animation:furioso-petal var(--petal-life) ease-out var(--petal-delay) both; }
+.furioso-cross { opacity:0; transform-origin:500px 300px; animation:furioso-cross .24s ease-out 9.8s both; }
+.cross-halo { fill:none; stroke:#168dff; stroke-width:12; filter:drop-shadow(0 0 14px #168dff); }
+.cross-core { fill:none; stroke:#d2f8ff; stroke-width:2; }
+@keyframes furioso-impact { 0%{transform:translate(0,0) scale(1)} 15%{transform:translate(-7px,4px) scale(1.025)} 35%{transform:translate(5px,-3px)} 65%{transform:translate(-2px,1px)} 100%{transform:translate(0,0) scale(1)} }
+@keyframes furioso-final-cut { 0%{opacity:0} 5%,16%{opacity:1} 35%{opacity:.65} 65%{opacity:.25} 100%{opacity:0} }
+@keyframes furioso-petal { 0%{opacity:0;transform:translate(0,0) rotate(0deg) scale(var(--size))} 10%,30%{opacity:1} 100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--spin)) scale(.25)} }
+@keyframes furioso-cross { 0%{opacity:0;transform:scale(.12)} 28%{opacity:1;transform:scale(1)} 65%{opacity:.8;transform:scale(1.35)} 100%{opacity:0;transform:scale(1.65)} }
+@media(prefers-reduced-motion:reduce){
+ .furioso-impact { animation:none; }
+ .furioso-petal,.furioso-cross { display:none; }
+}
