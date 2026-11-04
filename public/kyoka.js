@@ -31,7 +31,7 @@ function startKyoka(room){
  else node.querySelector('img').onerror=e=>{e.currentTarget.hidden=true;};
  document.body.append(node);
  document.querySelector('main').inert=true;
- kyokaActive={node,resultId:room.result.id,timer:setTimeout(finishKyoka,furioso?10500:8800)};
+ kyokaActive={node,resultId:room.result.id,timer:setTimeout(finishKyoka,furioso?11300:8800)};
  node.querySelector('button').onclick=finishKyoka;
  node.querySelector('button').focus({preventScroll:true});
  node.addEventListener('keydown',e=>{if(e.key==='Escape')finishKyoka();});
@@ -39,6 +39,6 @@ function startKyoka(room){
 }
 
 function furiosoSlashes(){
- const cuts=['M80 80 Q470 330 960 540','M950 45 Q490 340 70 550','M-70 350 Q490 190 1090 275','M340 -70 Q530 280 670 690','M-120 690 Q470 300 1140 -100'];
- return '<svg class="furioso-cuts" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">'+cuts.map((d,i)=>`<g class="furioso-cut ${i===4?'finisher':''}" style="--cut-delay:${i===4?8.8:6.8+i*.45}s"><path class="slash-glow" pathLength="100" d="${d}"/><path class="slash-edge" pathLength="100" d="${d}"/></g>`).join('')+'</svg>';
+ const cuts=['M80 80 Q470 330 960 540','M950 45 Q490 340 70 550','M-70 350 Q490 190 1090 275','M340 -70 Q530 280 670 690','M1140 -100 Q470 300 -120 690'];
+ return '<svg class="furioso-cuts" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">'+cuts.map((d,i)=>`<g class="furioso-cut ${i===4?'finisher':''}" style="--cut-delay:${i===4?7.7:6.8+i*.2}s"><path class="slash-glow" pathLength="100" d="${d}"/><path class="slash-edge" pathLength="100" d="${d}"/></g>`).join('')+'</svg><p class="furioso-complete"><em>[비프음]</em> 대행 완료.</p>';
 }
