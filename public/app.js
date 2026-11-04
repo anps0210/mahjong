@@ -46,6 +46,7 @@ function saveSession(value) {
 }
 
 function controls() {
+  $("voiceCharacter").disabled = pending || Boolean(roomState && (!ready || roomState.started));
   $("create").disabled = $("join").disabled = !ready || pending;
   $("start").disabled = Boolean(kyokaActive) || !ready || pending || !roomState || roomState.started ||
     !roomState.players[mySeat]?.host || roomState.players.length !== (roomState.playerCount||4) ||
@@ -110,7 +111,7 @@ function err(id, msg) {
 }
 
 $("create").onclick = () => {
-  request("room:create", { name: name(), playerCount:Number($("playerCount").value) }, res => {
+  request("room:create", { name: name(), playerCount:Number($("playerCount").value), voice:selectedVoice }, res => {
     if (!res?.ok)
       return err("homeError", "방 생성에 실패했어.");
 
@@ -121,6 +122,7 @@ $("create").onclick = () => {
 $("join").onclick = () => {
   request("room:join", {
     name: name(),
+    voice:selectedVoice,
     code: $("roomcode").value
   }, res => {
     if (!res?.ok)
@@ -172,7 +174,7 @@ socket.on("room:update", room => {
   $("players").innerHTML = room.players.map((p, i) =>
     `<div class="player">
       <strong>${escapeHtml(p.name)} ${p.bot ? "🤖" : p.host ? "👑" : ""}</strong>
-      <small>${p.bot ? "연습봇" : p.connected ? "접속 중" : "연결 끊김"}</small>
+      <small>${p.bot ? "연습봇" : p.connected ? "접속 중" : "연결 끊김"} · ${VOICE_NAMES[p.voice]||"미루쿠"}</small>
     </div>`
   ).join("");
 
@@ -194,6 +196,7 @@ socket.on("room:update", room => {
 socket.on("game:private", s => {
   selectedHandIndex = null;
   myHand = s.hand;
+  if(VOICE_NAMES[s.voice])saveVoice(s.voice);
   gamePlayerCount=s.playerCount||4;
   publicNuki=s.nuki||[];
   canNuki=Boolean(s.canNuki);
@@ -246,6 +249,7 @@ socket.on("game:discarded", d => {
   animateDiscard(d);
 });
 
+socket.on("game:voice", playCharacterVoice);
 socket.on("game:message", m => {
   $("gameMessage").textContent = m;
 });
@@ -483,6 +487,7 @@ function restore() {
 
 socket.on("connect", restore);
 socket.on("disconnect", () => {
+  stopVoices();
   selectedHandIndex = null;
   renderDiscards();
   ready = false;

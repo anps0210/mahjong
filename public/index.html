@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>雀 ROOM - 온라인 마작</title>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="game-view.css?v=20261103-kyoka-five">
-<link rel="stylesheet" href="kyoka.css?v=20261103-kyoka-five">
+<link rel="stylesheet" href="game-view.css?v=20261104-player-voices">
+<link rel="stylesheet" href="kyoka.css?v=20261104-player-voices">
 <link rel="preload" as="image" href="/effects/kyoka-suigetsu.jpg">
 </head>
 <body>
@@ -19,6 +19,12 @@
 <p id="connectionStatus" role="status" aria-live="polite">서버에 연결 중…</p>
 <button id="retryConnection" class="hidden">연결 다시 시도</button>
 
+<div id="voiceSettings" class="voice-settings">
+<label>내 캐릭터 목소리<select id="voiceCharacter"></select></label>
+<button id="voicePreview" type="button">목소리 듣기</button>
+<label class="voice-import">BOOTH 음성팩 불러오기<input id="voicePackFile" type="file" accept=".zip,application/zip"></label>
+<p id="voicePackStatus" role="status">음성을 들을 각 참가자가 원본 ZIP을 한 번 불러와 주세요. 이 브라우저에만 저장되며 서버에는 업로드되지 않습니다.</p>
+</div>
 <section id="home" class="panel">
 <h1>온라인 마작</h1>
 <p class="muted">방을 만들거나 초대 코드를 입력해 참가하세요.</p>
@@ -50,7 +56,7 @@
 </section>
 
 <section id="game" class="panel hidden">
-<span id="gameCode" class="sr-only"></span><span id="turnText" class="sr-only"></span><button id="musicButton" type="button" aria-pressed="false" aria-controls="backgroundMusic">음악 켜기</button><audio id="backgroundMusic" src="/audio/tabineko.mp3" loop preload="none"></audio><span id="musicStatus" class="sr-only" role="status"></span><button id="fullscreenButton" type="button">전체화면</button>
+<span id="gameCode" class="sr-only"></span><span id="turnText" class="sr-only"></span><button id="voiceToggle" type="button" aria-pressed="true">음성 켜짐</button><button id="musicButton" type="button" aria-pressed="false" aria-controls="backgroundMusic">음악 켜기</button><audio id="backgroundMusic" src="/audio/tabineko.mp3" loop preload="none"></audio><span id="musicStatus" class="sr-only" role="status"></span><button id="fullscreenButton" type="button">전체화면</button>
 <p class="rotate-hint">↻ 휴대폰을 가로로 돌리면 테이블과 손패를 한눈에 볼 수 있어요.</p>
 <div class="mahjong-table">
 <div class="table-plane"><div id="melds" class="table-melds" aria-label="공개된 부로"></div><div class="table-grain"></div><div id="discards" class="discards"></div><div id="centerBoard" class="tablecenter" aria-label="중앙 점수판"><div id="centerScores"></div><div class="center-info"><span id="centerTurn" role="status" aria-live="polite"></span><span id="wall"></span><span id="riichiPot" class="center-caption"></span></div></div></div>
@@ -68,7 +74,9 @@
 <footer>Mahjong Room · 실시간 방/턴 동기화 데모</footer>
 </main>
 <script src="/socket.io/socket.io.js"></script>
-<script src="kyoka.js?v=20261103-kyoka-five"></script>
-<script src="app.js?v=20261103-kyoka-five"></script>
+<script src="kyoka.js?v=20261104-player-voices"></script>
+<script src="/vendor/fflate.js"></script>
+<script src="voices.js?v=20261104-player-voices"></script>
+<script src="app.js?v=20261104-player-voices"></script>
 </body>
 </html>
