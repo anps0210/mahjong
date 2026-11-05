@@ -15,7 +15,7 @@
  .kyoka-line,.kyoka-image { transform:none!important; }
 }
 
-.furioso-scene { animation:furioso-fade .4s ease-in 14.9s both; }
+.furioso-scene { animation:furioso-fade .4s ease-in 16.1s both; }
 .furioso-scene .kyoka-line.final { font-size:clamp(28px,5vw,64px); }
 .furioso-cuts { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
 .furioso-cut { opacity:0; animation:furioso-cut .28s ease-out var(--cut-delay) both; }
@@ -33,12 +33,12 @@
  .furioso-cut .slash-glow { filter:none; opacity:.3; }
 }
 
-/* Final petals end before 12.1s, then one second of black before the caption. */
-.furioso-complete { position:absolute; top:12%; left:0; width:100%; margin:0; padding:0 12px; text-align:center; color:#4aaeff; font-family:Georgia,'Noto Serif KR',serif; font-size:clamp(14px,2.1vw,23px); font-style:normal; font-weight:400; letter-spacing:.02em; white-space:nowrap; opacity:0; animation:furioso-caption .15s ease-out 13.1s both; }
+/* Final petals end before 13.3s, then one second of black before the caption. */
+.furioso-complete { position:absolute; top:12%; left:0; width:100%; margin:0; padding:0 12px; text-align:center; color:#4aaeff; font-family:Georgia,'Noto Serif KR',serif; font-size:clamp(14px,2.1vw,23px); font-style:normal; font-weight:400; letter-spacing:.02em; white-space:nowrap; opacity:0; animation:furioso-caption .15s ease-out 14.3s both; }
 .furioso-complete em { font:inherit; font-style:italic; }
 @keyframes furioso-caption { from{opacity:0} to{opacity:1} }
 /* Keep the black pause visually empty, while keyboard Escape can still skip. */
-.furioso-scene .kyoka-skip { animation:furioso-hide-skip 0s step-end 9.3s forwards; }
+.furioso-scene .kyoka-skip { animation:furioso-hide-skip 0s step-end 10s forwards; }
 @keyframes furioso-hide-skip { to{opacity:0;pointer-events:none} }
 
 .furioso-impact { animation:furioso-impact .22s ease-out var(--cut-delay) both; transform-origin:center; }
@@ -48,7 +48,7 @@
 .furioso-cut.heavy .slash-glow { stroke-width:28; }
 .furioso-cut.heavy .slash-edge { stroke-width:19; }
 .furioso-petal { opacity:0; transform-box:fill-box; transform-origin:center; animation:furioso-petal var(--petal-life) ease-out var(--petal-delay) both; }
-.furioso-cross { opacity:0; transform-origin:500px 300px; animation:furioso-cross .24s ease-out 9.8s both; }
+.furioso-cross { opacity:0; transform-origin:500px 300px; animation:furioso-cross .24s ease-out 10.5s both; }
 .cross-halo { fill:none; stroke:#168dff; stroke-width:12; filter:drop-shadow(0 0 14px #168dff); }
 .cross-core { fill:none; stroke:#d2f8ff; stroke-width:2; }
 @keyframes furioso-impact { 0%{transform:translate(0,0) scale(1)} 15%{transform:translate(-7px,4px) scale(1.025)} 35%{transform:translate(5px,-3px)} 65%{transform:translate(-2px,1px)} 100%{transform:translate(0,0) scale(1)} }
