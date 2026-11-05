@@ -31,7 +31,7 @@ function startKyoka(room){
  else node.querySelector('img').onerror=e=>{e.currentTarget.hidden=true;};
  document.body.append(node);
  document.querySelector('main').inert=true;
- kyokaActive={node,resultId:room.result.id,timer:setTimeout(finishKyoka,furioso?15300:8800)};
+ kyokaActive={node,resultId:room.result.id,timer:setTimeout(finishKyoka,furioso?16500:8800)};
  node.querySelector('button').onclick=finishKyoka;
  node.querySelector('button').focus({preventScroll:true});
  node.addEventListener('keydown',e=>{if(e.key==='Escape')finishKyoka();});
@@ -45,10 +45,10 @@ function furiosoSlashes(){
   {at:6.98,p:[950,45,490,340,70,550]},
   {at:7.16,p:[-70,350,490,190,1090,275]},
   {at:7.34,p:[340,-70,530,280,670,690]},
-  {at:7.65,p:[-100,620,490,220,1100,-40],kind:'heavy'},
-  {at:8.12,p:[-80,140,480,400,1080,480]},
-  {at:8.3,p:[900,-80,520,290,180,680]},
-  {at:10.04,p:[1140,-100,470,300,-120,690],kind:'finisher'}
+  {at:8.0,p:[-100,620,490,220,1100,-40],kind:'heavy'},
+  {at:8.8,p:[370,-80,490,290,630,680]},
+  {at:8.98,p:[650,-80,530,290,390,680]},
+  {at:11.2,p:[1140,-100,470,300,-120,690],kind:'finisher'}
  ];
  const colors=['#c6f7ff','#168dff','#164ba6'];
  const slashes=cuts.map(({at,p,kind=''})=>{
@@ -63,5 +63,5 @@ function furiosoSlashes(){
   return `<g class="furioso-impact ${kind}" style="--cut-delay:${at}s"><g class="furioso-cut ${kind}"><path class="slash-glow" pathLength="100" d="${d}"/><path class="slash-edge" pathLength="100" d="${d}"/></g></g>${petals}`;
  }).join('');
  return '<svg class="furioso-cuts" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">'+slashes+
- '<g class="furioso-cross"><path class="cross-halo" d="M360 300H640M500 175V425"/><path class="cross-core" d="M360 300H640M500 175V425"/><circle cx="500" cy="300" r="8" fill="#fff"/></g></svg><p class="furioso-complete"><em>[비프음]</em> 대행 완료.</p>';
+ '<g class="furioso-cross"><path class="cross-halo" d="M365 130L685 530M300 330L700 270"/><path class="cross-core" d="M365 130L685 530M300 330L700 270"/><circle cx="500" cy="300" r="8" fill="#fff"/></g></svg><p class="furioso-complete"><em>[비프음]</em> 대행 완료.</p>';
 }
