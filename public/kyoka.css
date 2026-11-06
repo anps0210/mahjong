@@ -23,13 +23,13 @@
 .furioso-cut .slash-blue { fill:#22a8ff; }
 .furioso-cut .slash-white { fill:#fff; }
 .furioso-cut .slash-thread { fill:none; stroke:#fff; stroke-width:1.6; }
-.furioso-reveal { stroke-dasharray:100; stroke-dashoffset:100; stroke-linecap:butt; animation:furioso-draw var(--draw-time) linear var(--cut-delay) both; }
+.furioso-reveal { transform-box:view-box; transform:scaleX(0); animation:furioso-draw var(--draw-time) linear var(--cut-delay) both; }
 .furioso-cut.finisher { animation-duration:1.65s; animation-name:furioso-final-cut; }
-.furioso-cut.finisher .slash-white,.furioso-cut.finisher .slash-blue,.furioso-cut.finisher .slash-aura { animation:furioso-blade-collapse .28s ease-out var(--cut-delay) both; }
+.furioso-cut.finisher .furioso-blade { animation:furioso-blade-collapse .28s ease-out var(--cut-delay) both; }
 .furioso-cut.finisher .slash-thread { stroke:#b9faff; stroke-width:4; }
 @keyframes furioso-blade-collapse { 0%,45%{opacity:1} 100%{opacity:0} }
 @keyframes furioso-cut { 0%{opacity:0} 4%,48%{opacity:1} 100%{opacity:0} }
-@keyframes furioso-draw { from{stroke-dashoffset:100} to{stroke-dashoffset:0} }
+@keyframes furioso-draw { from{transform:scaleX(0)} to{transform:scaleX(1)} }
 @keyframes furioso-fade { from{opacity:1} to{opacity:0} }
 
 
@@ -51,7 +51,7 @@
 @keyframes furioso-petal { 0%{opacity:0;transform:translate(0,0) rotate(0deg) scale(var(--size))} 10%,30%{opacity:1} 100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--spin)) scale(.25)} }
 @keyframes furioso-cross { 0%{opacity:0;transform:scale(.12)} 28%{opacity:1;transform:scale(1)} 65%{opacity:.8;transform:scale(1.35)} 100%{opacity:0;transform:scale(1.65)} }
 @media(prefers-reduced-motion:reduce){
- .furioso-reveal { animation:none; stroke-dashoffset:0; }
+ .furioso-reveal { animation:none; transform:scaleX(1); }
  .furioso-petal,.furioso-cross { display:none; }
 }
 
@@ -60,3 +60,7 @@
 .furioso-pressure.finisher { fill:#7ddcff; }
 @keyframes furioso-pressure { 0%{opacity:0} 18%{opacity:.14} 100%{opacity:0} }
 @media(prefers-reduced-motion:reduce){ .furioso-pressure { display:none; } }
+
+/* One composited camera layer; SVG contents no longer scale for each camera kick. */
+.furioso-camera { position:absolute; inset:0; pointer-events:none; transform-origin:center; will-change:transform; contain:layout style; }
+@media(prefers-reduced-motion:reduce){ .furioso-camera { will-change:auto; } }
