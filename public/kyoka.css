@@ -19,18 +19,25 @@
 .furioso-scene .kyoka-line.final { font-size:clamp(28px,5vw,64px); }
 .furioso-cuts { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
 .furioso-cut { opacity:0; animation:furioso-cut .28s ease-out var(--cut-delay) both; }
-.furioso-cut path { fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:100; stroke-dashoffset:100; animation:furioso-draw .09s cubic-bezier(.12,.7,.3,1) var(--cut-delay) both; }
-.furioso-cut .slash-glow { stroke:#008dff; stroke-width:13; filter:drop-shadow(0 0 12px #00aaff) drop-shadow(0 0 26px #0065ff); }
-.furioso-cut .slash-edge { stroke:#fff; stroke-width:9; filter:drop-shadow(0 0 3px #b2f7ff); }
+.furioso-cut .slash-aura { fill:#1753df; opacity:.22; }
+.furioso-cut .slash-blue { fill:#22a8ff; }
+.furioso-cut .slash-white { fill:#e9ffff; }
+.furioso-cut .slash-thread { fill:none; stroke:#fff; stroke-width:1.6; stroke-dasharray:100; stroke-dashoffset:100; animation:furioso-draw .075s linear var(--cut-delay) both; }
+.furioso-cut .slash-echo { fill:none; stroke:#455aff; stroke-width:2; opacity:.65; }
 .furioso-cut.finisher { animation-duration:1.65s; animation-name:furioso-final-cut; }
-.furioso-cut.finisher .slash-glow { stroke-width:50; filter:drop-shadow(0 0 25px #00d5ff) drop-shadow(0 0 55px #007bff); }
-.furioso-cut.finisher .slash-edge { stroke-width:36; }
+.furioso-cut.finisher .slash-white,.furioso-cut.finisher .slash-blue,.furioso-cut.finisher .slash-aura { animation:furioso-blade-collapse .28s ease-out var(--cut-delay) both; }
+.furioso-cut.finisher .slash-thread { stroke:#b9faff; stroke-width:3; }
+.furioso-spark { opacity:0; animation:furioso-spark .19s ease-out var(--cut-delay) both; }
+.furioso-spark.heavy { animation-duration:.25s; }
+.furioso-spark.finisher { animation-duration:.38s; }
+@keyframes furioso-blade-collapse { 0%,18%{opacity:1} 100%{opacity:0} }
+@keyframes furioso-spark { 0%{opacity:0;transform:scale(.2) rotate(-12deg)} 15%{opacity:1;transform:scale(1.2) rotate(0)} 50%{opacity:.9;transform:scale(.8)} 100%{opacity:0;transform:scale(.1) rotate(12deg)} }
 @keyframes furioso-cut { 0%{opacity:0} 12%,40%{opacity:1} 100%{opacity:0} }
 @keyframes furioso-draw { from{stroke-dashoffset:100} to{stroke-dashoffset:0} }
 @keyframes furioso-fade { from{opacity:1} to{opacity:0} }
 @media(prefers-reduced-motion:reduce){
- .furioso-cut path { animation:none; stroke-dashoffset:0; }
- .furioso-cut .slash-glow { filter:none; opacity:.3; }
+ .furioso-cut .slash-thread { animation:none; stroke-dashoffset:0; }
+ .furioso-spark { display:none; }
 }
 
 /* Final petals end before 13.3s, then one second of black before the caption. */
@@ -45,11 +52,9 @@
 .furioso-impact.heavy { animation-duration:.32s; }
 .furioso-impact.finisher { animation-duration:.45s; }
 .furioso-cut.heavy { animation-duration:.42s; }
-.furioso-cut.heavy .slash-glow { stroke-width:28; }
-.furioso-cut.heavy .slash-edge { stroke-width:19; }
 .furioso-petal { opacity:0; transform-box:fill-box; transform-origin:center; animation:furioso-petal var(--petal-life) ease-out var(--petal-delay) both; }
 .furioso-cross { opacity:0; transform-origin:500px 300px; animation:furioso-cross .24s ease-out 10.5s both; }
-.cross-halo { fill:none; stroke:#168dff; stroke-width:12; filter:drop-shadow(0 0 14px #168dff); }
+.cross-halo { fill:none; stroke:#168dff; stroke-width:12; opacity:.45; }
 .cross-core { fill:none; stroke:#d2f8ff; stroke-width:2; }
 @keyframes furioso-impact { 0%{transform:translate(0,0) scale(1)} 15%{transform:translate(-7px,4px) scale(1.025)} 35%{transform:translate(5px,-3px)} 65%{transform:translate(-2px,1px)} 100%{transform:translate(0,0) scale(1)} }
 @keyframes furioso-final-cut { 0%{opacity:0} 5%,16%{opacity:1} 35%{opacity:.65} 65%{opacity:.25} 100%{opacity:0} }
