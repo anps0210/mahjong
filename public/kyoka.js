@@ -30,6 +30,7 @@ function startKyoka(room){
  if(furioso){node.querySelectorAll('.kyoka-image,.kyoka-cracks,.kyoka-flash').forEach(e=>e.remove());node.insertAdjacentHTML('beforeend',furiosoSlashes());}
  else node.querySelector('img').onerror=e=>{e.currentTarget.hidden=true;};
  document.body.append(node);
+ if(furioso)animateFuriosoCamera(node);
  document.querySelector('main').inert=true;
  kyokaActive={node,resultId:room.result.id,timer:setTimeout(finishKyoka,furioso?16500:8800)};
  node.querySelector('button').onclick=finishKyoka;
@@ -46,13 +47,13 @@ function furiosoSlashes(){
   {at:7.16,p:[60,235,500,300,940,365]},
   {at:7.34,p:[940,235,500,300,60,365]},
   {at:8.0,p:[80,500,500,260,920,100],kind:'heavy'},
-  {at:8.8,p:[360,-60,510,300,640,660]},
-  {at:8.98,p:[640,-60,490,300,360,660]},
+  {at:8.8,p:[180,-40,510,300,820,640]},
+  {at:8.98,p:[840,-40,490,300,160,640]},
   {at:11.2,p:[1140,-100,470,300,-120,690],kind:'finisher'}
  ];
  const colors=['#c6f7ff','#168dff','#164ba6'];
  const slashes=cuts.map(({at,p,kind=''},index)=>{
-  const draw=kind==='heavy'?.18:.14;
+  const draw=kind==='heavy'?.15:.12;
   const maskId=`furioso-reveal-${index}`;
   const d=`M${p[0]} ${p[1]} Q${p[2]} ${p[3]} ${p[4]} ${p[5]}`;
   const count=kind==='finisher'?24:kind==='heavy'?14:10;
@@ -62,12 +63,13 @@ function furiosoSlashes(){
    const dx=((i*47)%137-68)*(kind==='finisher'?2:1),dy=30+(i*31)%100;
    return `<g transform="translate(${x} ${y})"><path class="furioso-petal" d="M0 -8 C9 -6 9 4 0 9 C-5 4 -6 -3 0 -8Z" fill="${colors[i%3]}" style="--petal-delay:${at+t*draw+.025}s;--petal-life:${kind==='finisher'?1.9:.85}s;--dx:${dx}px;--dy:${dy}px;--spin:${i%2?240:-210}deg;--size:${.6+(i%4)*.22}"/></g>`;
   }).join('');
-  const width=kind==='finisher'?14:kind==='heavy'?11:7;
+  const width=kind==='finisher'?23:kind==='heavy'?16:9;
   // Reveal every visible layer along the same path: no complete blade can flash ahead of the cut.
-  return `<defs><mask id="${maskId}" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1400" height="1000" style="mask-type:luminance"><path class="furioso-reveal" d="${d}" pathLength="100" fill="none" stroke="white" stroke-width="${width*4.6+4}" style="--cut-delay:${at}s;--draw-time:${draw}s"/></mask></defs><g class="furioso-cut ${kind}" style="--cut-delay:${at}s" mask="url(#${maskId})"><path class="slash-aura" d="${furiosoRibbon(p,width*2.3)}"/><path class="slash-blue" d="${furiosoRibbon(p,width)}"/><path class="slash-white" d="${furiosoRibbon(p,width*.42)}"/><path class="slash-thread" d="${d}"/></g>${petals}`;
+  return `<defs><mask id="${maskId}" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1400" height="1000" style="mask-type:luminance"><path class="furioso-reveal" d="${d}" pathLength="100" fill="none" stroke="white" stroke-width="${width*4.6+4}" style="--cut-delay:${at}s;--draw-time:${draw}s"/></mask></defs><g class="furioso-cut ${kind}" style="--cut-delay:${at}s" mask="url(#${maskId})"><path class="slash-aura" d="${furiosoRibbon(p,width*2.3)}"/><path class="slash-blue" d="${furiosoRibbon(p,width)}"/><path class="slash-white" d="${furiosoRibbon(p,width*.55)}"/><path class="slash-thread" d="${d}"/></g>${petals}`;
  }).join('');
- return '<svg class="furioso-cuts" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">'+slashes+
- '<g class="furioso-cross"><path class="cross-halo" d="M365 130L685 530M300 330L700 270"/><path class="cross-core" d="M365 130L685 530M300 330L700 270"/><circle cx="500" cy="300" r="8" fill="#fff"/></g></svg><p class="furioso-complete"><em>[비프음]</em> 대행 완료.</p>';
+ const pulses=cuts.filter(c=>c.kind).map(c=>`<rect class="furioso-pressure ${c.kind}" x="0" y="0" width="1000" height="600" style="--cut-delay:${c.at+.065}s"/>`).join('');
+ return '<svg class="furioso-cuts" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">'+pulses+slashes+
+ '<g class="furioso-cross"><path class="cross-halo" d="M365 130L685 530M300 330L700 270"/><path class="cross-core" d="M365 130L685 530M300 330L700 270"/></g></svg><p class="furioso-complete"><em>[비프음]</em> 대행 완료.</p>';
 }
 
 // Filled tapered blades avoid full-screen blur filters on mobile GPUs.
@@ -81,4 +83,21 @@ function furiosoRibbon(p,width){
   right.push(`${(x+dy/length*w).toFixed(2)} ${(y-dx/length*w).toFixed(2)}`);
  }
  return `M${left.join('L')}L${right.reverse().join('L')}Z`;
+}
+
+// Move the entire effect plane together, so petals and cuts share one camera kick.
+function animateFuriosoCamera(node){
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const plane=node.querySelector('.furioso-cuts');
+ if(!plane?.animate)return;
+ const frames=[{offset:0,transform:'translate(0,0) scale(1)'}];
+ node.querySelectorAll('.furioso-cut').forEach((cut,i)=>{
+  const at=parseFloat(cut.style.getPropertyValue('--cut-delay'))+.045;
+  const final=cut.classList.contains('finisher'),heavy=cut.classList.contains('heavy');
+  const strength=final?18:heavy?11:5,span=final?.40:heavy?.27:.13,sign=i%2?-1:1;
+  const poses=[[0,0,0,1],[.15,-strength*sign,strength*.45,final?1.035:heavy?1.02:1.008],[.38,strength*.6*sign,-strength*.3,1.01],[.65,-strength*.25*sign,strength*.15,1.004],[1,0,0,1]];
+  for(const [t,x,y,scale] of poses)frames.push({offset:(at+t*span)/16.5,transform:`translate(${x}px,${y}px) scale(${scale})`});
+ });
+ frames.push({offset:1,transform:'translate(0,0) scale(1)'});
+ plane.animate(frames,{duration:16500,easing:'linear'});
 }
