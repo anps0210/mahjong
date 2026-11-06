@@ -19,14 +19,14 @@
 .furioso-scene .kyoka-line.final { font-size:clamp(28px,5vw,64px); }
 .furioso-cuts { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
 .furioso-cut { opacity:0; animation:furioso-cut .36s ease-out var(--cut-delay) both; }
-.furioso-cut .slash-aura { fill:#1753df; opacity:.22; }
+.furioso-cut .slash-aura { fill:#1753df; opacity:.32; }
 .furioso-cut .slash-blue { fill:#22a8ff; }
-.furioso-cut .slash-white { fill:#e9ffff; }
+.furioso-cut .slash-white { fill:#fff; }
 .furioso-cut .slash-thread { fill:none; stroke:#fff; stroke-width:1.6; }
 .furioso-reveal { stroke-dasharray:100; stroke-dashoffset:100; stroke-linecap:butt; animation:furioso-draw var(--draw-time) linear var(--cut-delay) both; }
 .furioso-cut.finisher { animation-duration:1.65s; animation-name:furioso-final-cut; }
 .furioso-cut.finisher .slash-white,.furioso-cut.finisher .slash-blue,.furioso-cut.finisher .slash-aura { animation:furioso-blade-collapse .28s ease-out var(--cut-delay) both; }
-.furioso-cut.finisher .slash-thread { stroke:#b9faff; stroke-width:3; }
+.furioso-cut.finisher .slash-thread { stroke:#b9faff; stroke-width:4; }
 @keyframes furioso-blade-collapse { 0%,45%{opacity:1} 100%{opacity:0} }
 @keyframes furioso-cut { 0%{opacity:0} 4%,48%{opacity:1} 100%{opacity:0} }
 @keyframes furioso-draw { from{stroke-dashoffset:100} to{stroke-dashoffset:0} }
@@ -54,3 +54,9 @@
  .furioso-reveal { animation:none; stroke-dashoffset:0; }
  .furioso-petal,.furioso-cross { display:none; }
 }
+
+.furioso-cuts { transform-origin:center; }
+.furioso-pressure { fill:#278dff; opacity:0; animation:furioso-pressure .15s ease-out var(--cut-delay) both; pointer-events:none; }
+.furioso-pressure.finisher { fill:#7ddcff; }
+@keyframes furioso-pressure { 0%{opacity:0} 18%{opacity:.14} 100%{opacity:0} }
+@media(prefers-reduced-motion:reduce){ .furioso-pressure { display:none; } }
