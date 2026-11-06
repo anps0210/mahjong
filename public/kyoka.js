@@ -56,7 +56,7 @@ function furiosoSlashes(){
   const draw=kind==='heavy'?.15:.12;
   const maskId=`furioso-reveal-${index}`;
   const d=`M${p[0]} ${p[1]} Q${p[2]} ${p[3]} ${p[4]} ${p[5]}`;
-  const count=kind==='finisher'?24:kind==='heavy'?14:10;
+  const count=kind==='finisher'?18:kind==='heavy'?10:6;
   const petals=Array.from({length:count},(_,i)=>{
    const t=(i+1)/(count+1),u=1-t;
    const x=u*u*p[0]+2*u*t*p[2]+t*t*p[4],y=u*u*p[1]+2*u*t*p[3]+t*t*p[5];
@@ -64,19 +64,23 @@ function furiosoSlashes(){
    return `<g transform="translate(${x} ${y})"><path class="furioso-petal" d="M0 -8 C9 -6 9 4 0 9 C-5 4 -6 -3 0 -8Z" fill="${colors[i%3]}" style="--petal-delay:${at+t*draw+.025}s;--petal-life:${kind==='finisher'?1.9:.85}s;--dx:${dx}px;--dy:${dy}px;--spin:${i%2?240:-210}deg;--size:${.6+(i%4)*.22}"/></g>`;
   }).join('');
   const width=kind==='finisher'?23:kind==='heavy'?16:9;
-  // Reveal every visible layer along the same path: no complete blade can flash ahead of the cut.
-  return `<defs><mask id="${maskId}" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1400" height="1000" style="mask-type:luminance"><path class="furioso-reveal" d="${d}" pathLength="100" fill="none" stroke="white" stroke-width="${width*4.6+4}" style="--cut-delay:${at}s;--draw-time:${draw}s"/></mask></defs><g class="furioso-cut ${kind}" style="--cut-delay:${at}s" mask="url(#${maskId})"><path class="slash-aura" d="${furiosoRibbon(p,width*2.3)}"/><path class="slash-blue" d="${furiosoRibbon(p,width)}"/><path class="slash-white" d="${furiosoRibbon(p,width*.55)}"/><path class="slash-thread" d="${d}"/></g>${petals}`;
+  // All current curves are monotonic in X: a directional clip reveals the same sweep
+  // without allocating and blending a large luminance-mask surface every frame.
+  const pad=width*2.3+3,left=Math.min(p[0],p[2],p[4])-pad,right=Math.max(p[0],p[2],p[4])+pad;
+  const top=Math.min(p[1],p[3],p[5])-pad,bottom=Math.max(p[1],p[3],p[5])+pad;
+  const origin=p[4]>p[0]?left:right;
+  return `<defs><clipPath id="${maskId}" clipPathUnits="userSpaceOnUse"><rect class="furioso-reveal" x="${left}" y="${top}" width="${right-left}" height="${bottom-top}" style="transform-origin:${origin}px 0px;--cut-delay:${at}s;--draw-time:${draw}s"/></clipPath></defs><g class="furioso-cut ${kind}" style="--cut-delay:${at}s" clip-path="url(#${maskId})"><g class="furioso-blade"><path class="slash-aura" d="${furiosoRibbon(p,width*2.3)}"/><path class="slash-blue" d="${furiosoRibbon(p,width)}"/><path class="slash-white" d="${furiosoRibbon(p,width*.55)}"/></g><path class="slash-thread" d="${d}"/></g>${petals}`;
  }).join('');
  const pulses=cuts.filter(c=>c.kind).map(c=>`<rect class="furioso-pressure ${c.kind}" x="0" y="0" width="1000" height="600" style="--cut-delay:${c.at+.065}s"/>`).join('');
- return '<svg class="furioso-cuts" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">'+pulses+slashes+
- '<g class="furioso-cross"><path class="cross-halo" d="M365 130L685 530M300 330L700 270"/><path class="cross-core" d="M365 130L685 530M300 330L700 270"/></g></svg><p class="furioso-complete"><em>[비프음]</em> 대행 완료.</p>';
+ return '<div class="furioso-camera"><svg class="furioso-cuts" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">'+pulses+slashes+
+ '<g class="furioso-cross"><path class="cross-halo" d="M365 130L685 530M300 330L700 270"/><path class="cross-core" d="M365 130L685 530M300 330L700 270"/></g></svg></div><p class="furioso-complete"><em>[비프음]</em> 대행 완료.</p>';
 }
 
 // Filled tapered blades avoid full-screen blur filters on mobile GPUs.
 function furiosoRibbon(p,width){
  const left=[],right=[];
- for(let i=0;i<=32;i++){
-  const t=i/32,u=1-t,x=u*u*p[0]+2*u*t*p[2]+t*t*p[4],y=u*u*p[1]+2*u*t*p[3]+t*t*p[5];
+ for(let i=0;i<=20;i++){
+  const t=i/20,u=1-t,x=u*u*p[0]+2*u*t*p[2]+t*t*p[4],y=u*u*p[1]+2*u*t*p[3]+t*t*p[5];
   const dx=2*(u*(p[2]-p[0])+t*(p[4]-p[2])),dy=2*(u*(p[3]-p[1])+t*(p[5]-p[3]));
   const length=Math.hypot(dx,dy)||1,w=width*Math.pow(Math.sin(Math.PI*t),1.1);
   left.push(`${(x-dy/length*w).toFixed(2)} ${(y+dx/length*w).toFixed(2)}`);
@@ -88,16 +92,16 @@ function furiosoRibbon(p,width){
 // Move the entire effect plane together, so petals and cuts share one camera kick.
 function animateFuriosoCamera(node){
  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
- const plane=node.querySelector('.furioso-cuts');
+ const plane=node.querySelector('.furioso-camera');
  if(!plane?.animate)return;
- const frames=[{offset:0,transform:'translate(0,0) scale(1)'}];
+ const frames=[{offset:0,transform:'translate3d(0,0,0) scale(1)'}];
  node.querySelectorAll('.furioso-cut').forEach((cut,i)=>{
   const at=parseFloat(cut.style.getPropertyValue('--cut-delay'))+.045;
   const final=cut.classList.contains('finisher'),heavy=cut.classList.contains('heavy');
   const strength=final?18:heavy?11:5,span=final?.40:heavy?.27:.13,sign=i%2?-1:1;
   const poses=[[0,0,0,1],[.15,-strength*sign,strength*.45,final?1.035:heavy?1.02:1.008],[.38,strength*.6*sign,-strength*.3,1.01],[.65,-strength*.25*sign,strength*.15,1.004],[1,0,0,1]];
-  for(const [t,x,y,scale] of poses)frames.push({offset:(at+t*span)/16.5,transform:`translate(${x}px,${y}px) scale(${scale})`});
+  for(const [t,x,y,scale] of poses)frames.push({offset:(at+t*span)/16.5,transform:`translate3d(${x}px,${y}px,0) scale(${scale})`});
  });
- frames.push({offset:1,transform:'translate(0,0) scale(1)'});
+ frames.push({offset:1,transform:'translate3d(0,0,0) scale(1)'});
  plane.animate(frames,{duration:16500,easing:'linear'});
 }
