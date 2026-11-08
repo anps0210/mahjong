@@ -3,10 +3,10 @@ const CARDS=['A','P'].flatMap(prefix=>Array.from({length:100},(_,i)=>({id:prefix
 const BY_ID=new Map(CARDS.map(c=>[c.id,c]));
 function enabled(room){return room.mode==='augment'&&room.playerCount===4;}
 function draw(room,player){if(enabled(room))player.augmentDraws=(player.augmentDraws||0)+1;}
-function begin(room,stage){
- const draft={id:randomUUID(),stage,offers:[],chosen:{}};
+function begin(room,stage,type){
+ const draft={id:randomUUID(),stage,type,offers:[],chosen:{}};
  room.players.forEach((p,seat)=>{
-  const pool=CARDS.filter(c=>!p.augments.includes(c.id)).map(c=>c.id);
+  const pool=CARDS.filter(c=>c.type===type&&!p.augments.includes(c.id)).map(c=>c.id);
   draft.offers[seat]=Array.from({length:3},()=>pool.splice(randomInt(pool.length),1)[0]);
   if(p.bot){const id=draft.offers[seat][randomInt(3)];draft.chosen[seat]=id;p.augments.push(id);}
  });
@@ -18,8 +18,9 @@ function init(room){
 }
 function maybeOpen(room){
  if(!enabled(room)||!room.started||room.pendingCall||room.augmentDraft)return;
- const stage=[0,6,12][room.augmentStage];
- if(stage!==undefined&&room.players.every(p=>p.augmentDraws>=stage)){room.augmentStage++;begin(room,stage);}
+ const phase=[{stage:0,type:"passive"},{stage:0,type:"active"},{stage:6,type:"active"},{stage:12,type:"active"}][room.augmentStage];
+ const stage=phase?.stage;
+ if(stage!==undefined&&room.players.every(p=>p.augmentDraws>=stage)){room.augmentStage++;begin(room,stage,phase.type);}
 }
 function choose(room,seat,id,card){
  const d=room.augmentDraft;
@@ -30,7 +31,7 @@ function choose(room,seat,id,card){
 }
 function privateView(room,seat){
  const d=room.augmentDraft;
- return {cards:(room.players[seat].augments||[]).map(id=>BY_ID.get(id)),draws:room.players[seat].augmentDraws||0,draft:room.started&&d?{id:d.id,stage:d.stage,chosen:d.chosen[seat]||null,offers:d.offers[seat].map(id=>BY_ID.get(id))}:null};
+ return {cards:(room.players[seat].augments||[]).map(id=>BY_ID.get(id)),draws:room.players[seat].augmentDraws||0,draft:room.started&&d?{id:d.id,stage:d.stage,type:d.type,chosen:d.chosen[seat]||null,offers:d.offers[seat].map(id=>BY_ID.get(id))}:null};
 }
-function publicView(room){const d=room.started&&room.augmentDraft;return d?{stage:d.stage,selected:room.players.map((_,i)=>Object.hasOwn(d.chosen,i))}:null;}
+function publicView(room){const d=room.started&&room.augmentDraft;return d?{stage:d.stage,type:d.type,selected:room.players.map((_,i)=>Object.hasOwn(d.chosen,i))}:null;}
 module.exports={CARDS,enabled,draw,init,maybeOpen,choose,privateView,publicView};
