@@ -23,6 +23,7 @@ function drawReplacement(room,p){
  p.drawn=room.replacementTiles.shift();
  room.replacementTiles.push(room.wall.pop());
  room.deadWall.splice(0,4,...room.replacementTiles);
+ require('./augments').draw(room,p);
  p.hand.push(p.drawn);p.temporaryFuriten=false;p.nukiDraw=false;
 }
 function replacement(room,p){drawReplacement(room,p);room.kanCount++;p.rinshan=true;}
