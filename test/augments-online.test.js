@@ -15,7 +15,10 @@ test('online augment drafts pause play, stay private, survive reconnect and resu
  const before=structuredClone(players[0].state);assert.equal((await call(players[0],'game:discard',{tile:before.drawn})).ok,false);assert.equal((await call(players[0],'game:tsumo')).ok,false);assert.equal((await call(players[0],'game:kan',{id:'ankan:東'})).ok,false);
  players[0].disconnect();players[0]=await connect();assert.equal((await call(players[0],'room:resume',sessions[0])).ok,true);await until(()=>players[0].state?.augment.draft);assert.deepEqual(players[0].state.augment,before.augment);
  const stages=[];
- async function chooseAll(){await until(()=>players.every(s=>s.state?.augment.draft));const stage=players[0].state.augment.draft.stage;stages.push(stage);for(const s of players){const d=s.state.augment.draft;assert.equal(d.stage,stage);assert.equal((await call(s,'game:augment-select',{id:d.id,card:d.offers[0].id})).ok,true);assert.equal((await call(s,'game:augment-select',{id:d.id,card:d.offers[0].id})).ok,false);}await until(()=>players.every(s=>!s.state.augment.draft&&!s.room.augmentDraft));}
+ async function chooseAll(){await until(()=>players.every(s=>s.state?.augment.draft));const draftId=players[0].state.augment.draft.id;const stage=players[0].state.augment.draft.stage;stages.push(stage);for(const s of players){const d=s.state.augment.draft;assert.equal(d.stage,stage);assert.ok(d.offers.every(c=>c.type===(stages.length===1?"passive":"active")));assert.equal((await call(s,'game:augment-select',{id:d.id,card:d.offers[0].id})).ok,true);assert.equal((await call(s,'game:augment-select',{id:d.id,card:d.offers[0].id})).ok,false);}await until(()=>players.every(s=>s.state.augment.draft?.id!==draftId));}
+ await chooseAll();
+ assert.equal(players[0].state.augment.draft.type,"active");
+ assert.equal((await call(players[0],"game:discard",{tile:players[0].state.drawn})).ok,false);
  await chooseAll();
  for(let n=0;n<47;n++){
   await until(()=>players.every(s=>!s.state.waiting&&s.state.discards.length===n));
@@ -23,5 +26,5 @@ test('online augment drafts pause play, stay private, survive reconnect and resu
   await until(()=>players.every(s=>!s.state.waiting&&s.state.discards.length===n+1));
   if(players[0].state.augment.draft)await chooseAll();
  }
- assert.deepEqual(stages,[0,6,12]);assert.ok(players.every(s=>s.state.augment.cards.length===3));assert.ok(players.every(s=>s.state.augment.draws===12));
+ assert.deepEqual(stages,[0,0,6,12]);assert.ok(players.every(s=>s.state.augment.cards.length===4&&s.state.augment.cards.filter(c=>c.type==="passive").length===1));assert.ok(players.every(s=>s.state.augment.draws===12));
 });

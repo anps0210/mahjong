@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="game-view.css?v=20261106-furioso-lite">
 <link rel="stylesheet" href="kyoka.css?v=20261106-furioso-lite">
 <link rel="preload" as="image" href="/effects/kyoka-suigetsu.jpg">
-<link rel="stylesheet" href="augments.css?v=20261108">
+<link rel="stylesheet" href="augments.css?v=20261108-phases">
 </head>
 <body>
 <main class="shell">
@@ -75,13 +75,13 @@
 <p id="gameMessage" class="muted" role="status"></p>
 </section>
 
-<div id="augmentModal" class="augment-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="augmentTitle"><div class="augment-dialog"><p class="augment-eyebrow">AUGMENT SELECT</p><h2 id="augmentTitle">증강 선택</h2><p id="augmentStatus" role="status"></p><div id="augmentChoices" class="augment-choices"></div><p id="augmentError" role="alert"></p></div></div>
+<div id="augmentModal" class="augment-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="augmentTitle"><div class="augment-dialog"><div class="augment-toolbar"><button id="augmentFullscreen" type="button">전체화면</button></div><p class="augment-eyebrow">AUGMENT SELECT</p><h2 id="augmentTitle">증강 선택</h2><p id="augmentStatus" role="status"></p><div id="augmentChoices" class="augment-choices"></div><p id="augmentError" role="alert"></p></div></div>
 <footer>Mahjong Room · 실시간 방/턴 동기화 데모</footer>
 </main>
 <script src="/socket.io/socket.io.js"></script>
 <script src="kyoka.js?v=20261106-furioso-lite"></script>
 <script src="/vendor/fflate.js"></script>
 <script src="voices.js?v=20261106-furioso-lite"></script>
-<script src="app.js?v=20261108-augments"></script>
+<script src="app.js?v=20261108-phases"></script>
 </body>
 </html>
