@@ -173,7 +173,7 @@ socket.on("room:update", room => {
 
   $("count").textContent =
     `${room.players.length}/${gamePlayerCount}`;
-  $("modeRules").textContent=room.mode==="augment"?"4인 증강 · 시작 및 전원 6/12회 쯔모 후 카드 선택 · 현재 카드는 효과 없음":gamePlayerCount===3?"3인 · 35,000점 시작 · 2~8만 제외 · 치 없음 · 북 빼기도라 · 특수 역만 경화수월 · 쯔모 손실 · 노텐 벌부 2,000점":"4명이 모이면 방장이 게임을 시작할 수 있어.";
+  $("modeRules").textContent=room.mode==="augment"?"4인 증강 · 시작 패시브 1장 + 액티브 1장 · 전원 6/12회 쯔모 후 액티브 1장씩 · 효과 없음":gamePlayerCount===3?"3인 · 35,000점 시작 · 2~8만 제외 · 치 없음 · 북 빼기도라 · 특수 역만 경화수월 · 쯔모 손실 · 노텐 벌부 2,000점":"4명이 모이면 방장이 게임을 시작할 수 있어.";
 
   $("players").innerHTML = room.players.map((p, i) =>
     `<div class="player">
@@ -524,19 +524,21 @@ socket.on("session:replaced", () => {
   controls();
 });
 $("retryConnection").onclick = () => socket.disconnect().connect();
-$("fullscreenButton").onclick = async () => {
+async function toggleFullscreen() {
   try {
     if (document.fullscreenElement) { await document.exitFullscreen(); return; }
     if (!document.documentElement.requestFullscreen) {
-      $("gameMessage").textContent = "기기를 가로로 돌려 주세요. 이 브라우저는 전체화면을 지원하지 않아요.";
+      $("gameMessage").textContent = $("augmentError").textContent = "기기를 가로로 돌려 주세요. 이 브라우저는 전체화면을 지원하지 않아요.";
       return;
     }
     await document.documentElement.requestFullscreen();
     try { await screen.orientation?.lock?.("landscape"); } catch { /* Rotation remains user-controlled when unsupported. */ }
-  } catch { $("gameMessage").textContent = "기기를 가로로 돌리면 넓은 화면으로 플레이할 수 있어요."; }
+  } catch { $("gameMessage").textContent = $("augmentError").textContent = "기기를 가로로 돌리면 넓은 화면으로 플레이할 수 있어요."; }
 };
+$("fullscreenButton").onclick = toggleFullscreen;
+$("augmentFullscreen").onclick = toggleFullscreen;
 document.addEventListener("fullscreenchange", () => {
-  $("fullscreenButton").textContent = document.fullscreenElement ? "전체화면 해제" : "전체화면";
+  $("fullscreenButton").textContent = $("augmentFullscreen").textContent = document.fullscreenElement ? "전체화면 해제" : "전체화면";
 });
 controls();
 socket.connect();
@@ -639,19 +641,21 @@ function renderAugments(){
  $('augmentCount').textContent=augmentState.cards.length;
  $('augmentInventory').textContent=augmentState.cards.map(c=>`${c.id} · ${c.type==='active'?'액티브':'패시브'} · ${c.description}`).join(' / ');
  if(!visible){modal.dataset.draft='';return;}
- $('augmentTitle').textContent=draft.stage===0?'시작 증강 선택':`${draft.stage}회 쯔모 완료 · 증강 선택`;
+ const typeLabel=draft.type==='passive'?'패시브':'액티브';
+ $('augmentTitle').textContent=draft.stage===0?`시작 ${typeLabel} 선택 · ${draft.type==='passive'?'1/2':'2/2'}`:`${draft.stage}회 쯔모 완료 · 액티브 선택`;
  const selected=roomState?.augmentDraft?.selected?.filter(Boolean).length||0;
- $('augmentStatus').textContent=draft.chosen?`${draft.chosen} 선택 완료 · 다른 플레이어 대기 (${selected}/4)`:`3장 중 하나를 선택하세요 · 선택 완료 ${selected}/4`;
- if(modal.dataset.draft!==draft.id){
+ $('augmentStatus').textContent=draft.chosen?`${draft.chosen} 선택 완료 · 다른 플레이어 대기 (${selected}/4)`:`${typeLabel} 3장 중 하나를 선택하세요 · 선택 완료 ${selected}/4`;
+ const newDraft=modal.dataset.draft!==draft.id;
+ if(newDraft){
   modal.dataset.draft=draft.id;$('augmentError').textContent='';
   $('augmentChoices').innerHTML=draft.offers.map(c=>`<button class="augment-card ${c.type}" data-card="${c.id}"><small>${c.type==='active'?'액티브':'패시브'}</small><strong>${c.id}</strong><span>${c.description}</span><b>선택</b></button>`).join('');
   $('augmentChoices').querySelectorAll('button').forEach(b=>b.onclick=()=>request('game:augment-select',{id:draft.id,card:b.dataset.card},res=>{$('augmentError').textContent=res?.error||'';}));
  }
  $('augmentChoices').querySelectorAll('button').forEach(b=>{b.classList.toggle('chosen',b.dataset.card===draft.chosen);b.disabled=!ready||pending||Boolean(draft.chosen);});
- if(wasHidden)$('augmentChoices').querySelector('button:not(:disabled)')?.focus();
+ if(wasHidden||newDraft)$('augmentChoices').querySelector('button:not(:disabled)')?.focus();
 }
 $('augmentModal').addEventListener('keydown',e=>{
- if(e.key!=='Tab')return;const buttons=[...$('augmentChoices').querySelectorAll('button:not(:disabled)')];
+ if(e.key!=='Tab')return;const buttons=[...$('augmentModal').querySelectorAll('button:not(:disabled)')];
  if(!buttons.length){e.preventDefault();return;}
  if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons.at(-1).focus();}
  else if(!e.shiftKey&&document.activeElement===buttons.at(-1)){e.preventDefault();buttons[0].focus();}
