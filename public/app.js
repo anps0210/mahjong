@@ -4,6 +4,7 @@ const socket = io({ autoConnect: false });
 const $ = id => document.getElementById(id);
 
 let roomCode = null;
+let augmentState={cards:[],draft:null};
 let gamePlayerCount = 4;
 let publicNuki = [];
 let canNuki = false;
@@ -46,6 +47,7 @@ function saveSession(value) {
 }
 
 function controls() {
+  $("augmentChoices").querySelectorAll("button").forEach(b=>b.disabled=!ready||pending||Boolean(augmentState.draft?.chosen));
   $("voiceCharacter").disabled = pending || Boolean(roomState && (!ready || roomState.started));
   $("furiosoTestButton").disabled = !ready || pending || !roomState?.started || !roomState.players[mySeat]?.host || roomState.players.some((p,i)=>i!==mySeat&&!p.bot);
   $("create").disabled = $("join").disabled = !ready || pending;
@@ -112,7 +114,7 @@ function err(id, msg) {
 }
 
 $("create").onclick = () => {
-  request("room:create", { name: name(), playerCount:Number($("playerCount").value), voice:selectedVoice }, res => {
+  request("room:create", { name: name(), playerCount:$("playerCount").value==="augment"?4:Number($("playerCount").value), mode:$("playerCount").value==="augment"?"augment":"standard", voice:selectedVoice }, res => {
     if (!res?.ok)
       return err("homeError", "방 생성에 실패했어.");
 
@@ -158,6 +160,7 @@ $("start").onclick = () => {
 socket.on("room:update", room => {
   if (room.code !== roomCode) return;
   roomState = room;
+  renderAugments();
   gamePlayerCount=room.playerCount||4;
   if(room.started&&kyokaActive)finishKyoka();
   renderResult(room);
@@ -170,7 +173,7 @@ socket.on("room:update", room => {
 
   $("count").textContent =
     `${room.players.length}/${gamePlayerCount}`;
-  $("modeRules").textContent=gamePlayerCount===3?"3인 · 35,000점 시작 · 2~8만 제외 · 치 없음 · 북 빼기도라 · 특수 역만 경화수월 · 쯔모 손실 · 노텐 벌부 2,000점":"4명이 모이면 방장이 게임을 시작할 수 있어.";
+  $("modeRules").textContent=room.mode==="augment"?"4인 증강 · 시작 및 전원 6/12회 쯔모 후 카드 선택 · 현재 카드는 효과 없음":gamePlayerCount===3?"3인 · 35,000점 시작 · 2~8만 제외 · 치 없음 · 북 빼기도라 · 특수 역만 경화수월 · 쯔모 손실 · 노텐 벌부 2,000점":"4명이 모이면 방장이 게임을 시작할 수 있어.";
 
   $("players").innerHTML = room.players.map((p, i) =>
     `<div class="player">
@@ -180,7 +183,7 @@ socket.on("room:update", room => {
   ).join("");
 
   controls();
-  $("connectionStatus").textContent = room.paused
+  $("connectionStatus").textContent = room.augmentDraft ? "모두의 증강 선택을 기다리고 있어요." : room.paused
     ? "참가자의 연결이 끊겨 대국을 일시 정지했어. 복귀하면 계속할 수 있어."
     : "서버에 연결됨";
   $("gameMessage").textContent = room.message;
@@ -195,6 +198,8 @@ socket.on("room:update", room => {
 });
 
 socket.on("game:private", s => {
+  augmentState=s.augment||{cards:[],draft:null};
+  renderAugments();
   selectedHandIndex = null;
   myHand = s.hand;
   if(VOICE_NAMES[s.voice])saveVoice(s.voice);
@@ -623,4 +628,31 @@ backgroundMusic.addEventListener('error',()=>{
   ++musicRequest;setMusicState(false);
   $("musicButton").textContent="음악 다시 시도";
   $("musicStatus").textContent="음악 파일을 불러오지 못했습니다. 다시 눌러 주세요.";
+});
+
+function renderAugments(){
+ const draft=augmentState.draft,modal=$("augmentModal"),wasHidden=modal.classList.contains('hidden');
+ const visible=Boolean(draft&&roomState?.started);
+ modal.classList.toggle('hidden',!visible);
+ $('game').inert=visible;
+ $('ownedAugments').classList.toggle('hidden',roomState?.mode!=='augment');
+ $('augmentCount').textContent=augmentState.cards.length;
+ $('augmentInventory').textContent=augmentState.cards.map(c=>`${c.id} · ${c.type==='active'?'액티브':'패시브'} · ${c.description}`).join(' / ');
+ if(!visible){modal.dataset.draft='';return;}
+ $('augmentTitle').textContent=draft.stage===0?'시작 증강 선택':`${draft.stage}회 쯔모 완료 · 증강 선택`;
+ const selected=roomState?.augmentDraft?.selected?.filter(Boolean).length||0;
+ $('augmentStatus').textContent=draft.chosen?`${draft.chosen} 선택 완료 · 다른 플레이어 대기 (${selected}/4)`:`3장 중 하나를 선택하세요 · 선택 완료 ${selected}/4`;
+ if(modal.dataset.draft!==draft.id){
+  modal.dataset.draft=draft.id;$('augmentError').textContent='';
+  $('augmentChoices').innerHTML=draft.offers.map(c=>`<button class="augment-card ${c.type}" data-card="${c.id}"><small>${c.type==='active'?'액티브':'패시브'}</small><strong>${c.id}</strong><span>${c.description}</span><b>선택</b></button>`).join('');
+  $('augmentChoices').querySelectorAll('button').forEach(b=>b.onclick=()=>request('game:augment-select',{id:draft.id,card:b.dataset.card},res=>{$('augmentError').textContent=res?.error||'';}));
+ }
+ $('augmentChoices').querySelectorAll('button').forEach(b=>{b.classList.toggle('chosen',b.dataset.card===draft.chosen);b.disabled=!ready||pending||Boolean(draft.chosen);});
+ if(wasHidden)$('augmentChoices').querySelector('button:not(:disabled)')?.focus();
+}
+$('augmentModal').addEventListener('keydown',e=>{
+ if(e.key!=='Tab')return;const buttons=[...$('augmentChoices').querySelectorAll('button:not(:disabled)')];
+ if(!buttons.length){e.preventDefault();return;}
+ if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons.at(-1).focus();}
+ else if(!e.shiftKey&&document.activeElement===buttons.at(-1)){e.preventDefault();buttons[0].focus();}
 });

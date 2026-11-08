@@ -1,3 +1,4 @@
+const augments=require('./augments');
 const {isSanma,playerCount,initialScore,allowedTile}=require('./rules');
 const north=require('./north');
 const express = require("express");
@@ -111,8 +112,10 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     return {
       code: room.code,
       playerCount: playerCount(room),
+      mode:room.mode||"standard",
+      augmentDraft:augments.publicView(room),
       started: room.started,
-      paused: room.started && room.players.some(p => !p.connected),
+      paused: room.started && (Boolean(room.augmentDraft)||room.players.some(p => !p.connected)),
       message: room.message || "",
       result: room.result || null,
       doraIndicators: indicators(room),
@@ -150,6 +153,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
 
     io.to(socketId).emit("game:private", {
       playerCount: playerCount(room),
+      augment:augments.privateView(room,seat),
       voice: player.voice || "milk",
       nuki: room.players.map(p=>p.nuki||0),
       canNuki: north.canExtract(room,seat),
@@ -177,6 +181,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   }
 
   function sendAllPrivateStates(room) {
+    augments.maybeOpen(room);
     room.players.forEach(player => {
       if (player.connected && !player.bot) privateState(room, player.socketId);
     });
@@ -199,6 +204,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     room.kanCount = 0;
     room.turn = 0;
     room.started = true;
+    augments.init(room);
     room.message = "동가부터 시작합니다. 내 차례에 패를 선택해 버리세요.";
 
     room.players.forEach(player => {
@@ -216,6 +222,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     // 동가는 처음부터 14장. 방장 승계는 좌석 순서를 바꾸지 않는다.
     room.players[0].drawn = room.wall.pop();
     room.players[0].hand.push(room.players[0].drawn);
+    augments.draw(room,room.players[0]);
 
     sendAllPrivateStates(room);
     sendRoom(room);
@@ -265,6 +272,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     p.temporaryFuriten=false;p.rinshan=false;p.nukiDraw=false;
     p.drawn = room.wall.pop();
     p.hand.push(p.drawn);
+    augments.draw(room,p);
   }
 
   function resolveCalls(room) {
@@ -307,9 +315,9 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
 
   function scheduleBot(room) {
     clearTimeout(room.botTimer);
-    if (!room.started || room.pendingCall || room.players.some(p => !p.connected) || !room.players[room.turn]?.bot) return;
+    if (!room.started || room.augmentDraft || room.pendingCall || room.players.some(p => !p.connected) || !room.players[room.turn]?.bot) return;
     room.botTimer = setTimeout(() => {
-      if (rooms.get(room.code) !== room || !room.started || room.pendingCall || room.players.some(p => !p.connected)) return;
+      if (rooms.get(room.code) !== room || !room.started || room.augmentDraft || room.pendingCall || room.players.some(p => !p.connected)) return;
       const player = room.players[room.turn];
       if (!player?.bot || player.hand.length !== 14 - 3 * (player.melds?.length || 0)) return;
       if(evaluateWin(room,room.turn,{tile:player.drawn})){
@@ -325,14 +333,28 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   }
 
   io.on("connection", socket => {
-    socket.on("room:create", ({ name, voice, playerCount: count = 4 } = {}, callback) => {
+    socket.use(([event,...args],next)=>{
+      const room=rooms.get(socket.data.room);
+      if(room?.started&&room.augmentDraft&&event.startsWith('game:')&&event!=='game:augment-select'){
+        const ack=args.at(-1);if(typeof ack==='function')ack({ok:false,error:'모두의 증강 선택을 기다리고 있어요.'});return;
+      }
+      next();
+    });
+    socket.on('game:augment-select',({id,card}={},callback)=>{
+      const room=rooms.get(socket.data.room),seat=room?.players.findIndex(p=>p.socketId===socket.id);
+      if(!room||seat<0||!augments.choose(room,seat,id,card))return callback?.({ok:false,error:'선택 가능한 카드를 골라 주세요.'});
+      sendAllPrivateStates(room);sendRoom(room);scheduleBot(room);callback?.({ok:true});
+    });
+    socket.on("room:create", ({ name, voice, playerCount: count = 4, mode="standard" } = {}, callback) => {
       if (alreadyJoined(socket, callback)) return;
       if(count!==3&&count!==4)return callback?.({ok:false,error:"3인 또는 4인 모드를 선택해 주세요."});
+      if(!["standard","augment"].includes(mode)||(mode==="augment"&&count!==4))return callback?.({ok:false,error:"증강은 4인마작에서 선택해 주세요."});
       const code = makeCode();
       const player = makePlayer(socket, name, voice);
       const room = {
         code,
         playerCount: count,
+        mode,
         players: [player],
         hostId: player.id,
         started: false,
