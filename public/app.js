@@ -99,8 +99,9 @@ function entered(res) {
 }
 
 const show = id => {
-  if(id!=="game" && $("musicButton").getAttribute("aria-pressed")==="true") $("musicButton").click();
+  if(id!=="game") { backgroundMusic.pause(); $("settingsDialog").close(); }
   document.body.classList.toggle("in-game", id === "game");
+  if(id==="game") syncMusic();
   ["home", "lobby", "game"].forEach(x =>
     $(x).classList.toggle("hidden", x !== id)
   );
@@ -302,7 +303,8 @@ function renderHand() {
   });
   controls();
 }
-$("sortHand").onchange = () => { selectedHandIndex = null; renderHand(); renderDiscards(); renderTurn(); };
+try { $("sortHand").checked = localStorage.getItem("mahjong.sortHand") !== "false"; } catch {}
+$("sortHand").onchange = () => { try { localStorage.setItem("mahjong.sortHand",String($("sortHand").checked)); } catch {} selectedHandIndex = null; renderHand(); renderDiscards(); renderTurn(); };
 // Keep the square table. Sanma uses bottom/right/left and leaves the far side empty.
 function seatLayout(){
  const places=gamePlayerCount===3?['bottom','right','left']:positions;
@@ -400,7 +402,7 @@ $("furiosoTestForm").onsubmit = e => {
  request("game:test-furioso",{password:$("furiosoPassword").value},res=>{
   $("furiosoPassword").value='';
   $("furiosoTestError").textContent=res?.error||'';
-  if(res?.ok)$("testMenu").open=false;
+  if(res?.ok)$("settingsDialog").close();
  });
 };
 function renderResult(room) {
@@ -608,32 +610,31 @@ function renderWaitYaku(guide){
 }
 
 
-// Local audio starts only from a user gesture. No visual player or reserved space.
+// Remember the preference; browsers may defer playback until the first gesture.
 const backgroundMusic=$("backgroundMusic");
 backgroundMusic.volume=0.5;
-let musicRequest=0;
-function setMusicState(enabled){
-  $("musicButton").setAttribute("aria-pressed",String(enabled));
-  $("musicButton").textContent=enabled?"음악 끄기":"음악 켜기";
-}
-$("musicButton").onclick = async () => {
-  const request=++musicRequest;
-  const enabled=$("musicButton").getAttribute("aria-pressed")!=="true";
-  setMusicState(enabled);
+try { $("musicEnabled").checked=localStorage.getItem("mahjong.music")!=="false"; } catch {}
+async function syncMusic(){
+ if(!$("musicEnabled").checked||!document.body.classList.contains('in-game')){backgroundMusic.pause();return;}
+ if(!backgroundMusic.paused)return;
+ try { await backgroundMusic.play();
+  if(!$("musicEnabled").checked||!document.body.classList.contains('in-game'))backgroundMusic.pause();
   $("musicStatus").textContent='';
-  if(!enabled){backgroundMusic.pause();return;}
-  try { await backgroundMusic.play(); }
-  catch(error){
-    if(request!==musicRequest)return;
-    setMusicState(false);
-    $("musicButton").textContent="음악 다시 시도";
-    $("musicStatus").textContent="음악을 재생하지 못했습니다. 다시 눌러 주세요.";
-  }
+ } catch { $("musicStatus").textContent='화면을 한 번 누르면 음악 재생을 다시 시도합니다.'; }
+}
+$("musicEnabled").onchange=()=>{
+ try { localStorage.setItem("mahjong.music",String($("musicEnabled").checked)); } catch {}
+ $("musicStatus").textContent='';syncMusic();
 };
-backgroundMusic.addEventListener('error',()=>{
-  ++musicRequest;setMusicState(false);
-  $("musicButton").textContent="음악 다시 시도";
-  $("musicStatus").textContent="음악 파일을 불러오지 못했습니다. 다시 눌러 주세요.";
+document.addEventListener('pointerdown',syncMusic);
+document.addEventListener('keydown',syncMusic);
+backgroundMusic.addEventListener('error',()=>{$("musicStatus").textContent='음악 파일을 불러오지 못했습니다.';});
+$("settingsButton").onclick=()=>$("settingsDialog").showModal();
+$("settingsClose").onclick=()=>$("settingsDialog").close();
+$("settingsDialog").addEventListener('click',e=>{
+ if(e.target!==$("settingsDialog"))return;
+ const r=e.target.getBoundingClientRect();
+ if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();
 });
 
 function renderAugments(){

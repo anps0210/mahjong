@@ -565,3 +565,29 @@ body.in-game { background:#101b29; }
 /* Keep the round visible within the compact central scoreboard on mobile. */
 .table-plane .center-info { gap:1px; }
 .table-plane .tablecenter #roundInfo { display:block; font-size:10px; line-height:1.1; letter-spacing:0; color:#d5e8f5; }
+
+/* Consolidated game settings; native dialog remains above the game overlays. */
+.game-toolbar { position:absolute; top:8px; right:10px; z-index:40; display:flex; gap:8px; }
+.game-toolbar #fullscreenButton,.game-toolbar #settingsButton { position:static; padding:5px 9px; font-size:11px; background:#e6f3ed; color:#245657; border:1px solid #7da8a1; opacity:1; }
+#settingsDialog { box-sizing:border-box; width:min(440px,calc(100vw - 24px)); max-height:calc(100dvh - 24px); overflow:auto; margin:auto; padding:18px; border:1px solid #7594ad; border-radius:14px; background:#15283b; color:#edf5ff; box-shadow:0 12px 40px #0008; }
+#settingsDialog::backdrop { background:#020a14b3; }
+.settings-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.settings-heading h2 { margin:0; font-size:20px; }
+.settings-options { display:grid; gap:0; margin-top:12px; }
+.settings-options label,.settings-voice { display:flex; align-items:center; justify-content:space-between; min-height:44px; margin:0; border-bottom:1px solid #ffffff20; font-size:14px; }
+.settings-options input { width:20px; height:20px; margin:0; accent-color:#b6d68c; }
+#settingsDialog #voiceToggle { position:static; padding:5px 9px; }
+.settings-test { margin-top:12px; border-top:1px solid #ffffff30; padding-top:10px; }
+.settings-test h3 { margin:0 0 8px; font-size:15px; }
+.settings-test label { margin:0 0 8px; font-size:13px; }
+.settings-test input { margin-top:5px; padding:8px; }
+.settings-test small { display:block; margin-top:8px; color:#bbcbdc; }
+#settingsDialog #musicStatus { margin:6px 0; color:#e9d596; font-size:12px; }
+@media (orientation:landscape) and (max-height:500px) {
+ #settingsDialog { width:min(650px,calc(100vw - 24px)); }
+ #settingsDialog[open] { display:grid; grid-template-columns:1fr 1fr; gap:0 20px; }
+ .settings-heading { grid-column:1 / -1; }
+ .settings-options { grid-column:1; grid-row:2; }
+ .settings-test { grid-column:2; grid-row:2; border-top:0; }
+ #settingsDialog #musicStatus { grid-column:1 / -1; grid-row:3; }
+}
