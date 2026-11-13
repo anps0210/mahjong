@@ -120,11 +120,13 @@ function endDraw(room,reason='패산 소진'){
    const discards=room.discards.filter(d=>d.seat===i);
    return !room.players[i].melds.length&&discards.length&&discards.every(d=>d.calledBy===undefined&&(/^[19]/.test(d.tile)||d.tile.length===1));
   });
-  if(nagashi.length){for(const seat of nagashi)for(let i=0;i<playerCount(room);i++)if(i!==seat){const pay=seat===0||i===0?4000:2000;deltas[i]-=pay;deltas[seat]+=pay;}}
+  if(nagashi.length){for(const seat of nagashi)for(let i=0;i<playerCount(room);i++)if(i!==seat){const pay=(seat===0||i===0?4000:2000)+(room.honba||0)*100;deltas[i]-=pay;deltas[seat]+=pay;}}
   else {tenpai=room.players.map((p,i)=>waits(p).length?i:-1).filter(i=>i>=0);if(tenpai.length&&tenpai.length<playerCount(room))room.players.forEach((p,i)=>deltas[i]=tenpai.includes(i)?(isSanma(room)?2000:3000)/tenpai.length:-(isSanma(room)?2000:3000)/(playerCount(room)-tenpai.length));}
  }
+ const pot=nagashi.length?(room.riichiPot||0)*1000:0;
+ if(pot){deltas[nagashi[0]]+=pot;room.riichiPot=0;}
  room.players.forEach((p,i)=>p.score+=deltas[i]);room.started=false;room.pendingCall=null;
- room.result={type:'draw',reason,nagashi,tenpai,deltas,names:room.players.map(p=>p.name),scores:room.players.map(p=>p.score),winners:[]};
+ room.result={pot,type:'draw',reason,nagashi,tenpai,deltas,names:room.players.map(p=>p.name),scores:room.players.map(p=>p.score),winners:[]};
  room.message=nagashi.length?'유국 · 유국만관 정산':`유국 · ${reason}`;
 }
 module.exports={evaluateWin,settleWins,endDraw,isFuriten,waits,indicators,code,shape,NAMES,RULE};

@@ -1,3 +1,4 @@
+const rounds=require('./rounds');
 const augments=require('./augments');
 const {isSanma,playerCount,initialScore,allowedTile}=require('./rules');
 const north=require('./north');
@@ -113,6 +114,9 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       code: room.code,
       playerCount: playerCount(room),
       mode:room.mode||"standard",
+      roundLabel:rounds.label(room),
+      matchActive:Boolean(room.matchActive),
+      matchEnded:Boolean(room.matchEnded),
       augmentDraft:augments.publicView(room),
       started: room.started,
       paused: room.started && (Boolean(room.augmentDraft)||room.players.some(p => !p.connected)),
@@ -181,6 +185,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   }
 
   function sendAllPrivateStates(room) {
+    rounds.finish(room);
     augments.maybeOpen(room);
     room.players.forEach(player => {
       if (player.connected && !player.bot) privateState(room, player.socketId);
@@ -188,6 +193,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   }
 
   function startGame(room) {
+    rounds.prepare(room);
     const shuffled = dealWall ? dealWall(room) : makeWall(room);
 
     // 왕패: 영상패 4장과 도라·우라도라 표시패 각 5장.
@@ -205,7 +211,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     room.turn = 0;
     room.started = true;
     augments.init(room);
-    room.message = "동가부터 시작합니다. 내 차례에 패를 선택해 버리세요.";
+    room.message = `${rounds.label(room)} · 동가부터 시작합니다. 내 차례에 패를 선택해 버리세요.`;
 
     room.players.forEach(player => {
       player.hand = room.wall.splice(0, 13);
@@ -226,7 +232,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
 
     sendAllPrivateStates(room);
     sendRoom(room);
-    io.to(room.code).emit("game:message", "동가부터 시작합니다. 내 차례에 패를 선택해 버리세요.");
+    io.to(room.code).emit("game:message", room.message);
     scheduleBot(room);
   }
 
@@ -375,7 +381,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       const room = rooms.get(roomCode);
 
       if (!room) return callback?.({ ok: false, error: "존재하지 않는 방 코드야." });
-      if (room.started) return callback?.({ ok: false, error: "이미 게임이 시작된 방이야." });
+      if (room.started || room.matchActive) return callback?.({ ok: false, error: "이미 대국이 시작된 방이야." });
       if (room.players.length >= playerCount(room)) return callback?.({ ok: false, error: "방이 가득 찼어." });
 
       const player = makePlayer(socket, name, voice);
@@ -412,7 +418,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     socket.on("room:bots", ({ fill } = {}, callback) => {
       const room = rooms.get(socket.data.room);
       if (!room || !room.players.some(p => p.id === room.hostId && p.socketId === socket.id)) return callback?.({ ok:false, error:"방장만 봇을 설정할 수 있어." });
-      if (room.started) return callback?.({ ok:false, error:"대기실에서만 봇을 설정할 수 있어." });
+      if (room.started || room.matchActive) return callback?.({ ok:false, error:"대국 시작 전이나 종료 후에만 봇을 설정할 수 있어." });
       if (fill === true) {
         while (room.players.length < playerCount(room)) room.players.push({ id:randomUUID(), bot:true, voice:VOICES[room.players.length%VOICES.length], name:`연습봇 ${room.players.length}`, connected:true, score:initialScore(room), hand:[] });
       } else if (fill === false) {
@@ -540,7 +546,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
 
       // Reserve lobby seats briefly; never remove a seat during a live game.
       player.expiryTimer = setTimeout(() => {
-        if (rooms.get(roomCode) !== room || player.connected || room.started) return;
+        if (rooms.get(roomCode) !== room || player.connected || room.started || room.matchActive) return;
         room.players = room.players.filter(p => p !== player);
         assignHost(room);
         sendAllPrivateStates(room);

@@ -561,3 +561,7 @@ body.in-game { background:#101b29; }
 .test-menu button { padding:7px; width:100%; }
 .test-menu small { display:block; margin-top:7px; }
 #furiosoTestError { color:#ffc8b3; margin:5px 0 0; }
+
+/* Keep the round visible within the compact central scoreboard on mobile. */
+.table-plane .center-info { gap:1px; }
+.table-plane .tablecenter #roundInfo { display:block; font-size:10px; line-height:1.1; letter-spacing:0; color:#d5e8f5; }
