@@ -54,8 +54,8 @@ function controls() {
   $("start").disabled = Boolean(kyokaActive) || !ready || pending || !roomState || roomState.started ||
     !roomState.players[mySeat]?.host || roomState.players.length !== (roomState.playerCount||4) ||
     roomState.players.some(p => !p.connected);
-  $("fillBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || roomState.players.length >= (roomState.playerCount||4);
-  $("removeBots").disabled = !ready || pending || !roomState || roomState.started || !roomState.players[mySeat]?.host || !roomState.players.some(p => p.bot);
+  $("fillBots").disabled = !ready || pending || !roomState || roomState.started || roomState.matchActive || !roomState.players[mySeat]?.host || roomState.players.length >= (roomState.playerCount||4);
+  $("removeBots").disabled = !ready || pending || !roomState || roomState.started || roomState.matchActive || !roomState.players[mySeat]?.host || !roomState.players.some(p => p.bot);
   $("callPanel").querySelectorAll("button").forEach(b => { b.disabled = !ready || pending || roomState?.paused || callState?.answered; });
   $("nukiButton").disabled = !ready || pending || !canNuki || roomState?.paused || waitingCall;
   $("tsumoButton").disabled = !ready || pending || !canTsumo || roomState?.paused || waitingCall;
@@ -160,6 +160,8 @@ $("start").onclick = () => {
 socket.on("room:update", room => {
   if (room.code !== roomCode) return;
   roomState = room;
+  $("start").textContent=room.matchActive&&!room.started?"다음 국 시작":room.matchEnded?"새 반장전 시작":"게임 시작";
+  $("roundInfo").textContent=room.roundLabel||"동1국 0본장";
   renderAugments();
   gamePlayerCount=room.playerCount||4;
   if(room.started&&kyokaActive)finishKyoka();
@@ -407,7 +409,9 @@ function renderResult(room) {
   panel.classList.toggle("hidden",!r);
   if(!r){panel.innerHTML='';return;}
   const name=seat=>escapeHtml(r.names?.[seat]||room.players[seat]?.name||`플레이어 ${seat+1}`);
-  panel.innerHTML=`<h2>${r.test?'테스트 화료':r.type==='win'?'화료':r.nagashi?.length?'유국만관':'유국'}</h2>${r.type==='draw'?`<p>${escapeHtml(r.reason||'')} · ${r.nagashi?.length?'유국만관: '+r.nagashi.map(name).join(', '):'텐파이: '+((r.tenpai||[]).map(name).join(', ')||'없음')}</p>`:''}${(r.winners||[]).map(w=>`<article class="winner-result"><h3>${name(w.seat)} · ${w.method==='ron'?`론 (${name(w.from)})`:'쯔모'} · ${w.points.toLocaleString()}점</h3><p>${w.yakuman?`${w.yakuman}배 역만`:`${w.han}판 ${w.fu}부`}</p><ul>${w.yaku.map(y=>`<li>${escapeHtml(y.name)} <b>${y.yakuman?`${y.yakuman}배 역만`:`${y.han}판`}</b></li>`).join('')}</ul><div class="winning-hand">${w.hand.map(t=>tileFace(t)).join('')}${w.melds.map(m=>`<span class="result-meld">${m.tiles.map(t=>tileFace(t)).join('')}</span>`).join('')}</div></article>`).join('')}<div class="result-scores">${r.scores.map((score,i)=>`<div><strong>${name(i)}</strong><span>${score.toLocaleString()}점</span><b class="${r.deltas[i]>=0?'gain':'loss'}">${r.deltas[i]>0?'+':''}${r.deltas[i].toLocaleString()}</b></div>`).join('')}</div>${r.pot?`<p>리치 공탁금 ${r.pot.toLocaleString()}점 포함</p>`:''}${r.doraIndicators?.length?`<p>도라 표시패: ${r.doraIndicators.map(escapeHtml).join(' · ')}</p>`:''}${r.uraIndicators?.length?`<p>우라도라 표시패: ${r.uraIndicators.map(escapeHtml).join(' · ')}</p>`:''}`;
+  panel.innerHTML=`${r.round?`<p>${escapeHtml(r.round)}</p>`:""}<h2>${r.test?'테스트 화료':r.type==='win'?'화료':r.nagashi?.length?'유국만관':'유국'}</h2>${r.type==='draw'?`<p>${escapeHtml(r.reason||'')} · ${r.nagashi?.length?'유국만관: '+r.nagashi.map(name).join(', '):'텐파이: '+((r.tenpai||[]).map(name).join(', ')||'없음')}</p>`:''}${(r.winners||[]).map(w=>`<article class="winner-result"><h3>${name(w.seat)} · ${w.method==='ron'?`론 (${name(w.from)})`:'쯔모'} · ${w.points.toLocaleString()}점</h3><p>${w.yakuman?`${w.yakuman}배 역만`:`${w.han}판 ${w.fu}부`}</p><ul>${w.yaku.map(y=>`<li>${escapeHtml(y.name)} <b>${y.yakuman?`${y.yakuman}배 역만`:`${y.han}판`}</b></li>`).join('')}</ul><div class="winning-hand">${w.hand.map(t=>tileFace(t)).join('')}${w.melds.map(m=>`<span class="result-meld">${m.tiles.map(t=>tileFace(t)).join('')}</span>`).join('')}</div></article>`).join('')}<div class="result-scores">${r.scores.map((score,i)=>`<div><strong>${name(i)}</strong><span>${score.toLocaleString()}점</span><b class="${r.deltas[i]>=0?'gain':'loss'}">${r.deltas[i]>0?'+':''}${r.deltas[i].toLocaleString()}</b></div>`).join('')}</div>${r.pot?`<p>리치 공탁금 ${r.pot.toLocaleString()}점 포함</p>`:''}${r.doraIndicators?.length?`<p>도라 표시패: ${r.doraIndicators.map(escapeHtml).join(' · ')}</p>`:''}${r.uraIndicators?.length?`<p>우라도라 표시패: ${r.uraIndicators.map(escapeHtml).join(' · ')}</p>`:''}`;
+  if(r.matchEnded)panel.insertAdjacentHTML('beforeend',`<h3>대국 종료 · ${escapeHtml(r.endReason)}</h3>${r.finalPot?`<p>남은 공탁 ${r.finalPot.toLocaleString()}점은 1위에게 지급</p>`:''}<ol>${(r.ranking||[]).map(p=>`<li>${escapeHtml(p.name)} · ${p.score.toLocaleString()}점</li>`).join('')}</ol>`);
+  else if(r.nextRound)panel.insertAdjacentHTML('beforeend',`<p>${r.repeat?'친 연장':'친 교대'} · 다음: <strong>${escapeHtml(r.nextRound)}</strong></p><p>방장이 아래의 ‘다음 국 시작’을 누르면 계속합니다.</p>`);
 }
 
 function renderShanten() {
