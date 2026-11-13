@@ -213,7 +213,7 @@ test("expired lobby seats are released and remaining players receive updated sea
   assert.equal(fresh.state.mySeat, 1);
 });
 
-test("wall exhaustion returns to lobby and a new game resets discard history", async t => {
+test("wall exhaustion shows result and next hand resets discards with the correct dealer", async t => {
   const { fourPlayers, start } = await setup(t);
   const { players } = await fourPlayers();
   await start(players);
@@ -226,7 +226,7 @@ test("wall exhaustion returns to lobby and a new game resets discard history", a
   assert.equal(players[0].room.started, false);
   await start(players);
   assert.equal(players[0].state.discards.length, 0);
-  assert.equal(players[0].state.hand.length, 14);
+  assert.equal(players[0].state.hand.length, players[0].state.mySeat===0?14:13);
   assert.equal(players[0].state.wallCount, 69);
 });
 
@@ -258,9 +258,8 @@ test("solo player completes a round with three bots and resumes interrupted bot 
   }
   assert.ok(resumed.state.discards.length<=70);
   assert.ok(resumed.room.result);
-  const removed=event(resumed,'room:update',r=>r.players.length===1);
-  assert.equal((await call(resumed,'room:bots',{fill:false})).ok,true);await removed;
-  assert.equal(resumed.state.mySeat,0);
+  if(resumed.room.matchActive){assert.equal((await call(resumed,'room:bots',{fill:false})).ok,false);assert.equal(resumed.room.players.length,4);}
+  else {const removed=event(resumed,'room:update',r=>r.players.length===1);assert.equal((await call(resumed,'room:bots',{fill:false})).ok,true);await removed;assert.equal(resumed.state.mySeat,0);}
 });
 
 test("only host controls bots; bot-only rooms expire after humans leave", async t => {
