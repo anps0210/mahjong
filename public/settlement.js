@@ -87,7 +87,7 @@ function startWinIntro(room){
   const faces=tiles.map((tile,i)=>{
    const slot=slots[i];if(!slot)return null;
    const face=document.createElement('div');face.className=`flat-winning-tile flat-${position}`;
-   const rect=slot.rect,side=position==='left'||position==='right',width=side?rect.height/2.34:rect.width;
+   const rect=slot.rect,side=position==='left'||position==='right',width=side?rect.height/1.7:rect.width;
    face.style.cssText=`left:${rect.left+rect.width/2}px;top:${rect.top+rect.height/2}px;width:${width}px;--flat-angle:${position==='left'?90:position==='right'?-90:position==='top'?180:0}deg`;
    face.innerHTML=tileFace(tile);face.hidden=true;group.append(face);return face;
   });
