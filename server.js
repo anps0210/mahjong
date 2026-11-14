@@ -15,7 +15,7 @@ const {evaluateWin,settleWins,endDraw,isFuriten,indicators,waits,waitDetails,wai
 const kongs=require("./kongs");
 const VOICES=["milk","03","02","01"];
 
-function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, dealWall = null } = {}) {
+function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 2000, dealWall = null } = {}) {
   const app = express();
   const server = http.createServer(app);
   const io = new Server(server);

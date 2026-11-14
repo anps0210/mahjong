@@ -114,16 +114,16 @@ function startWinIntro(room){
    flash.innerHTML='<svg viewBox="0 0 100 220" aria-hidden="true"><path d="M65 0L35 70 60 65 28 130 52 120 45 205"/><path d="M35 70L12 85 22 120M28 130L77 150 90 183"/></svg>';
    node.append(flash);
   }
- },250));
+ },1500));
  scene.timers.push(setTimeout(()=>{
   if(winIntro!==scene)return;
   document.querySelectorAll('.declaration-ron,.declaration-tsumo').forEach(el=>el.remove());
   reveals.forEach(v=>v.reveal());
- },850));
+ },2100));
  scene.timers.push(setTimeout(()=>{
   if(winIntro!==scene)return;
   closeWinIntro();if(roomState?.result?.id===r.id)renderResult(roomState);controls();
- },1850));
+ },3100));
  return true;
 }
 
