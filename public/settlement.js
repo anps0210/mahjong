@@ -52,3 +52,40 @@ function finishSettlement(id){
  settlementSeen.add(id);try {sessionStorage.setItem('mahjong.settlementSeen',JSON.stringify([...settlementSeen].slice(-30)));}catch{}
  closeSettlement();document.getElementById('start').focus();
 }
+
+let winIntro=null;
+const winIntroSeen=new Set();
+try { JSON.parse(sessionStorage.getItem('mahjong.winIntroSeen')||'[]').forEach(id=>winIntroSeen.add(id)); } catch {}
+function closeWinIntro(){
+ if(!winIntro)return;
+ winIntro.timers.forEach(clearTimeout);winIntro.node.remove();winIntro=null;
+}
+function startWinIntro(room){
+ const r=room.result;
+ if(!r?.id||r.type!=='win'||!r.winners?.length)return false;
+ if(winIntro?.id===r.id)return true;
+ if(winIntroSeen.has(r.id)||settlementSeen.has(r.id))return false;
+ closeWinIntro();winIntroSeen.add(r.id);
+ try {sessionStorage.setItem('mahjong.winIntroSeen',JSON.stringify([...winIntroSeen].slice(-30)));}catch{}
+ const node=document.createElement('div');node.className='win-intro';document.body.append(node);
+ winIntro={id:r.id,node,timers:[]};const scene=winIntro;
+ for(const w of r.winners){
+  showDeclaration({id:`${r.id}-${w.seat}-win`,seat:w.seat,action:w.method,name:r.names?.[w.seat]||room.players[w.seat]?.name});
+  const target=w.method==='ron'?document.querySelector('.river .tile.latest'):w.seat===mySeat?document.querySelector('#hand button.drawn'):document.querySelector(`.opponent-hand[data-seat="${w.seat}"] .drawn-back`);
+  const rect=target?.getBoundingClientRect();
+  const x=rect?.width?rect.left+rect.width/2:innerWidth/2,y=rect?.height?rect.top+rect.height/2:innerHeight*.46;
+  const flash=document.createElement('div');flash.className='winning-strike';flash.style.left=x+'px';flash.style.top=y+'px';
+  flash.innerHTML=`<svg viewBox="0 0 100 220" aria-hidden="true"><path d="M65 0L35 70 60 65 28 130 52 120 45 205"/><path d="M35 70L12 85 22 120M28 130L77 150 90 183"/></svg><div class="strike-tile">${w.tile?tileFace(w.tile):''}</div>`;
+  node.append(flash);
+ }
+ scene.timers.push(setTimeout(()=>{
+  if(winIntro!==scene)return;
+  document.querySelectorAll(".declaration-ron,.declaration-tsumo").forEach(el=>el.remove());
+  node.innerHTML=`<div class="win-reveal" role="status">${r.winners.map(w=>`<section><h3>${escapeHtml(r.names?.[w.seat]||room.players[w.seat]?.name||'')} · ${w.method==='ron'?'론':'쯔모'}</h3><div class="reveal-hand">${[...w.hand].sort((a,b)=>tileOrder(a)-tileOrder(b)).map(t=>tileFace(t)).join('')}${(w.melds||[]).map(m=>`<span class="reveal-meld">${m.tiles.map(t=>tileFace(t)).join('')}</span>`).join('')}</div></section>`).join('')}</div>`;
+ },650));
+ scene.timers.push(setTimeout(()=>{
+  if(winIntro!==scene)return;
+  closeWinIntro();if(roomState?.result?.id===r.id)renderResult(roomState);controls();
+ },1650));
+ return true;
+}
