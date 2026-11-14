@@ -13,4 +13,12 @@ test('two actual rounds preserve players/scores, rotate winds and restore inter-
   const late=await connect();assert.equal((await call(late,'room:join',{code:sessions[0].code})).ok,false);late.disconnect();
   const before=p[1].room.result;p[1].disconnect();p[1]=await connect();assert.equal((await call(p[1],'room:resume',sessions[1])).ok,true);await wait(()=>p[1].room?.result);assert.deepEqual(p[1].room.result,before);assert.ok(p[1].room.players.every(x=>x.score===25000));
  }
+ const id=p[0].room.result.id;
+ assert.equal((await call(p[0],'game:settlement-done',{id:'stale'})).ok,false);
+ assert.equal((await call(p[0],'game:settlement-done',{id})).ok,true);
+ await new Promise(r=>setTimeout(r,100));assert.equal(p[0].room.started,false);
+ for(const socket of p.slice(1))assert.equal((await call(socket,'game:settlement-done',{id})).ok,true);
+ await wait(()=>p.every(s=>s.room.started));assert.equal(p[0].room.roundLabel,'동3국 2본장');
+ assert.equal((await call(p[0],'game:settlement-done',{id})).ok,false);
+
 });

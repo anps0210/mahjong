@@ -54,6 +54,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   }
 
   function attach(socket, room, player, callback) {
+    clearTimeout(room.nextTimer);room.nextTimer=null;
     clearTimeout(room.cleanupTimer);
     clearTimeout(player.expiryTimer);
     player.socketId = socket.id;
@@ -189,13 +190,25 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
 
   function sendAllPrivateStates(room) {
     rounds.finish(room);
+    scheduleNextRound(room);
     augments.maybeOpen(room);
     room.players.forEach(player => {
       if (player.connected && !player.bot) privateState(room, player.socketId);
     });
   }
 
+  function scheduleNextRound(room){
+    if(room.started||!room.nextRound||!room.result||room.nextTimer||room.players.some(p=>!p.connected)||room.players.some(p=>!p.bot&&p.settledResult!==room.result.id))return;
+    const id=room.result.id;
+    io.to(room.code).emit('game:next-round',{id,label:room.result.nextRound});
+    room.nextTimer=setTimeout(()=>{
+      room.nextTimer=null;
+      if(!room.started&&room.result?.id===id&&room.nextRound&&room.players.every(p=>p.connected))startGame(room);
+    },1200);
+  }
+
   function startGame(room) {
+    clearTimeout(room.nextTimer);room.nextTimer=null;
     rounds.prepare(room);
     const shuffled = dealWall ? dealWall(room) : makeWall(room);
 
@@ -433,6 +446,11 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       callback?.({ok:true});
     });
 
+    socket.on('game:settlement-done',({id}={},callback)=>{
+      const room=rooms.get(socket.data.room),player=room?.players.find(p=>p.socketId===socket.id);
+      if(!player||room.started||!room.nextRound||room.result?.id!==id)return callback?.({ok:false});
+      player.settledResult=id;scheduleNextRound(room);callback?.({ok:true});
+    });
     socket.on("game:start", callback => {
       const room = rooms.get(socket.data.room);
 
@@ -560,10 +578,12 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
 
       sendRoom(room);
       if (room.players.every(p => p.bot || !p.connected)) {
-        clearTimeout(room.cleanupTimer);
+        clearTimeout(room.nextTimer);room.nextTimer=null;
+    clearTimeout(room.cleanupTimer);
         room.cleanupTimer = setTimeout(() => {
           if (rooms.get(roomCode) === room && room.players.every(p => p.bot || !p.connected)) {
             room.players.forEach(p => clearTimeout(p.expiryTimer));
+            clearTimeout(room.nextTimer);
             clearTimeout(room.botTimer);
             rooms.delete(roomCode);
           }
@@ -578,7 +598,8 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
     close: () => new Promise(resolve => {
       io.close(() => {
         for (const room of rooms.values()) {
-          clearTimeout(room.cleanupTimer);
+          clearTimeout(room.nextTimer);room.nextTimer=null;
+    clearTimeout(room.cleanupTimer);
           clearTimeout(room.botTimer);
           room.players.forEach(p => clearTimeout(p.expiryTimer));
         }
