@@ -6,3 +6,12 @@ test('exhaustive draw increments honba and carries deposits, dealer tenpai repea
 for(const n of [3,4])test(`${n} players rotate through East and South, finish and reset a new match`,()=>{const a=room(n);for(let i=0;i<n*2;i++){assert.equal(a.roundWind,Math.floor(i/n));assert.equal(a.handNumber,i%n+1);end(a,{win:[1]});if(i<n*2-1)r.prepare(a);}assert.equal(a.matchEnded,true);assert.equal(a.matchActive,false);assert.equal(a.result.ranking.length,n);r.prepare(a);assert.equal(a.handNumber,1);assert.equal(a.roundWind,0);assert.equal(a.honba,0);assert.ok(a.players.every(p=>p.score===(n===3?35000:25000)));});
 test('negative score ends match once and final riichi pot is awarded once',()=>{const a=room();a.players[1].score=-100;a.riichiPot=2;end(a,{win:[0]});assert.equal(a.matchEnded,true);assert.equal(a.players[0].score,27000);r.finish(a);assert.equal(a.players[0].score,27000);assert.equal(a.riichiPot,0);});
 test('nagashi mangan includes honba and takes carried riichi deposits',()=>{const a=room();a.honba=2;a.riichiPot=1;a.players.forEach(p=>{p.hand=[];p.melds=[];});a.discards=[{seat:0,tile:'東'.replace('東','동')},{seat:1,tile:'2만'},{seat:2,tile:'3만'},{seat:3,tile:'4만'}];require('../scoring').endDraw(a);assert.deepEqual(a.result.deltas,[13600,-4200,-4200,-4200]);assert.equal(a.riichiPot,0);r.finish(a);assert.equal(a.result.nextRound,'동1국 3본장');});
+
+test('settlement standings preserve old scores and break ties by initial seat',()=>{
+ const room={started:false,matchActive:true,roundWind:0,handNumber:1,honba:0,players:[{name:'A',score:20000,matchOrder:1},{name:'B',score:30000,matchOrder:0},{name:'C',score:25000,matchOrder:2},{name:'D',score:25000,matchOrder:3}],result:{type:'win',winners:[{seat:1}],scores:[20000,30000,25000,25000],deltas:[-5000,5000,0,0]}};
+ require('../rounds').finish(room);
+ assert.ok(room.result.id);assert.deepEqual(room.result.standings.map(p=>p.seat),[1,2,3,0]);
+ assert.deepEqual(room.result.standings.map(p=>p.previousRank),[1,3,4,2]);
+ assert.ok(room.result.standings.every(p=>p.before===25000));
+ const id=room.result.id;require('../rounds').finish(room);assert.equal(room.result.id,id);
+});
