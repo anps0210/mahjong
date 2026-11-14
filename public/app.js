@@ -62,6 +62,8 @@ function controls() {
   $("tsumoButton").disabled = !ready || pending || !canTsumo || roomState?.paused || waitingCall;
   $("selfKanActions").querySelectorAll("button").forEach(b=>b.disabled=!ready||pending||roomState?.paused||waitingCall);
   $("riichiButton").disabled = !ready || pending || !roomState?.started || roomState.paused || waitingCall || currentTurn !== mySeat || ownRiichi || !riichiChoices.length;
+  $("riichiButton").classList.toggle("hidden", !roomState?.started || waitingCall || currentTurn !== mySeat || ownRiichi || !riichiChoices.length);
+  $("selfActions").classList.toggle("hidden",waitingCall);
   $("hand").querySelectorAll("button").forEach(b => {
     b.classList.toggle("selected-tile", Number(b.dataset.i) === selectedHandIndex);
     b.setAttribute("aria-pressed", String(Number(b.dataset.i) === selectedHandIndex));
@@ -216,7 +218,7 @@ socket.on("game:private", s => {
   kanChoices = s.kanOptions || [];
   $("tsumoButton").classList.toggle("hidden", !canTsumo);
   $("furitenBadge").classList.toggle("hidden", !s.furiten);
-  $("selfKanActions").innerHTML = kanChoices.map((o,i)=>`<button data-kan="${i}">${o.type==='ankan'?'암깡':'가깡'} · ${escapeHtml(o.tile)}</button>`).join("");
+  $("selfKanActions").innerHTML = kanChoices.map((o,i)=>`<button class="action-button action-kan" data-kan="${i}">${o.type==='ankan'?'암깡':'가깡'} · ${escapeHtml(o.tile)}</button>`).join("");
   $("selfKanActions").querySelectorAll("button").forEach(b=>b.onclick=()=>request("game:kan",{id:kanChoices[Number(b.dataset.kan)].id},res=>{if(res?.error)$("gameMessage").textContent=res.error;}));
   ownRiichi = s.riichi;
   riichiChoices = s.riichiDiscards || [];
@@ -225,7 +227,7 @@ socket.on("game:private", s => {
   shantenValue = s.shanten;
   choosingRiichi = false;
   renderShanten();
-  $("riichiButton").textContent = ownRiichi ? "리치 선언 완료" : "리치 · 1,000점";
+  $("riichiButton").textContent = "리치";
   callState = s.call;
   waitingCall = s.waiting;
   bannedTiles = s.banned || [];
@@ -368,10 +370,10 @@ function renderCalls() {
   panel.classList.toggle("hidden", !waitingCall);
   if (!waitingCall) { panel.innerHTML = ""; return; }
   if (!callState?.options.length || callState.answered) {
-    panel.innerHTML = '<strong>다른 플레이어의 론·부로 선택을 기다리고 있어요…</strong>';
+    panel.classList.add('hidden'); panel.innerHTML = '';
     return;
   }
-  panel.innerHTML = `<div class="call-target">${tileFace(callState.tile)}<strong>이 패에 응답할 수 있어요</strong></div><div class="call-actions">${callState.options.map(o=>`<button data-choice="${o.id}"><b>${{chi:'치',pon:'퐁',kan:'깡',ron:'론',ankan:'암깡',kakan:'가깡'}[o.type]}</b><span class="call-preview">${o.consume.map(t=>tileFace(t)).join('')}</span></button>`).join('')}<button data-choice="skip" class="skip-call">스킵</button></div>`;
+  panel.innerHTML = `<div class="call-actions">${callState.options.map(o=>`<button class="action-button action-${o.type==='ron'?'win':o.type}" data-choice="${o.id}"><b>${{chi:'치',pon:'퐁',kan:'깡',ron:'론',ankan:'암깡',kakan:'가깡'}[o.type]}</b><span class="call-preview">${o.consume.map(t=>tileFace(t)).join('')}</span></button>`).join('')}<button data-choice="skip" class="action-button action-pass skip-call">패스</button></div>`;
   panel.querySelectorAll('button').forEach(b=>b.onclick=()=>request('game:call',{id:callState.id,choice:b.dataset.choice==='skip'?null:b.dataset.choice},res=>{if(res?.error) $("gameMessage").textContent=res.error;}));
 }
 function meldMarkup(m,seat){
@@ -434,8 +436,9 @@ $("showShanten").onchange = () => {
 $("riichiButton").onclick = () => {
   selectedHandIndex = null;
   renderDiscards();
+  renderDiscardPreview();
   choosingRiichi = !choosingRiichi;
-  $("riichiButton").textContent = choosingRiichi ? "리치 선택 취소" : "리치 · 1,000점";
+  $("riichiButton").textContent = choosingRiichi ? "취소" : "리치";
   renderTurn();
   controls();
 };
