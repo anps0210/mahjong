@@ -619,3 +619,12 @@ body.in-game { background:#101b29; }
 #selfActions .action-button:focus-visible,#callPanel .action-button:focus-visible { outline:3px solid white; outline-offset:4px; }
 @media (orientation:portrait) { #selfActions,#callPanel { bottom:122px; right:10%; max-width:85%; } }
 @media (min-height:600px) and (orientation:landscape) { #selfActions,#callPanel { bottom:122px; } }
+
+/* Brief declaration lettering; transform/opacity only, no full-screen effects. */
+.declaration-pop{position:absolute;z-index:45;pointer-events:none;text-align:center;animation:declaration-pop 1.15s both;--ink:#ffe070;left:50%;top:45%;transform:translate(-50%,-50%);}
+.declaration-pop strong{display:block;font-size:clamp(42px,10dvh,82px);font-weight:1000;font-style:italic;line-height:1.1;color:var(--ink);-webkit-text-stroke:1px #fff;text-shadow:3px 4px 0 #172842,-2px -2px 0 #172842,0 5px 10px #0009;white-space:nowrap;}
+.declaration-pop small{display:inline-block;margin-top:6px;padding:3px 14px;border-radius:3px;background:#10223dde;color:#fff;font-weight:700;font-size:12px;}
+.declaration-bottom{top:62%;left:50%}.declaration-top{top:28%;left:50%}.declaration-left{top:43%;left:28%}.declaration-right{top:43%;left:72%}
+.declaration-chii{--ink:#a6ef58}.declaration-pon{--ink:#5adeff}.declaration-kan{--ink:#c899ff}.declaration-nuki{--ink:#ff8fc3}
+@keyframes declaration-pop{0%{opacity:0;transform:translate(-50%,-35%) scale(1.4) rotate(-8deg)}18%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-5deg)}75%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-5deg)}100%{opacity:0;transform:translate(-50%,-65%) scale(1.04) rotate(-5deg)}}
+@media(prefers-reduced-motion:reduce){.declaration-pop{animation-name:declaration-fade}@keyframes declaration-fade{0%,100%{opacity:0}15%,80%{opacity:1}}}
