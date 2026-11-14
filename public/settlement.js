@@ -75,24 +75,55 @@ function startWinIntro(room){
  try {sessionStorage.setItem('mahjong.winIntroSeen',JSON.stringify([...winIntroSeen].slice(-30)));}catch{}
  const node=document.createElement('div');node.className='win-intro';document.body.append(node);
  winIntro={id:r.id,node,timers:[]};const scene=winIntro;
- for(const w of r.winners){
+ const reveals=r.winners.map(w=>{
+  const position=seatLayout().find(p=>p.seat===w.seat)?.position||'bottom';
+  const selector=w.seat===mySeat?'#hand button':`.opponent-hand[data-seat="${w.seat}"] .tile-back`;
+  const slots=[...document.querySelectorAll(selector)].map(el=>({rect:el.getBoundingClientRect(),drawn:el.matches('.drawn,.drawn-back')}));
+  const tiles=[...w.hand];const i=tiles.lastIndexOf(w.tile);if(i>=0)tiles.splice(i,1);
+  tiles.sort((a,b)=>tileOrder(a)-tileOrder(b));
+  const drawnSlot=slots.findIndex(s=>s.drawn);
+  if(w.method==='tsumo')tiles.splice(drawnSlot>=0?drawnSlot:tiles.length,0,w.tile);
+  const group=document.createElement('div');group.className='table-win-reveal';group.dataset.seat=w.seat;
+  const faces=tiles.map((tile,i)=>{
+   const slot=slots[i];if(!slot)return null;
+   const face=document.createElement('div');face.className=`flat-winning-tile flat-${position}`;
+   const rect=slot.rect,side=position==='left'||position==='right',width=side?rect.height/2.34:rect.width;
+   face.style.cssText=`left:${rect.left+rect.width/2}px;top:${rect.top+rect.height/2}px;width:${width}px;--flat-angle:${position==='left'?90:position==='right'?-90:position==='top'?180:0}deg`;
+   face.innerHTML=tileFace(tile);face.hidden=true;group.append(face);return face;
+  });
+  node.append(group);
+  const mask=document.createElement('style');node.append(mask);
+  const root=w.seat===mySeat?'#hand':`.opponent-hand[data-seat="${w.seat}"]`;
+  const reveal=()=>{mask.textContent=`${root}{visibility:hidden!important}`;faces.forEach(f=>{if(f)f.hidden=false;});};
   showDeclaration({id:`${r.id}-${w.seat}-win`,seat:w.seat,action:w.method,name:r.names?.[w.seat]||room.players[w.seat]?.name});
-  const target=w.method==='ron'?document.querySelector('.river .tile.latest'):w.seat===mySeat?document.querySelector('#hand button.drawn'):document.querySelector(`.opponent-hand[data-seat="${w.seat}"] .drawn-back`);
+  const target=w.method==='ron'?document.querySelector('.river .tile.latest'):document.querySelector(w.seat===mySeat?'#hand button.drawn':`${root} .drawn-back`);
   const rect=target?.getBoundingClientRect();
-  const x=rect?.width?rect.left+rect.width/2:innerWidth/2,y=rect?.height?rect.top+rect.height/2:innerHeight*.46;
-  const flash=document.createElement('div');flash.className='winning-strike';flash.style.left=x+'px';flash.style.top=y+'px';
-  flash.innerHTML=`<svg viewBox="0 0 100 220" aria-hidden="true"><path d="M65 0L35 70 60 65 28 130 52 120 45 205"/><path d="M35 70L12 85 22 120M28 130L77 150 90 183"/></svg><div class="strike-tile">${w.tile?tileFace(w.tile):''}</div>`;
-  node.append(flash);
- }
+  return {w,faces,drawnSlot,root,mask,reveal,rect};
+ });
+ // Declaration first, then strike the actual discarded/drawn tile. No duplicate floating tile.
  scene.timers.push(setTimeout(()=>{
   if(winIntro!==scene)return;
-  document.querySelectorAll(".declaration-ron,.declaration-tsumo").forEach(el=>el.remove());
-  node.innerHTML=`<div class="win-reveal" role="status">${r.winners.map(w=>`<section><h3>${escapeHtml(r.names?.[w.seat]||room.players[w.seat]?.name||'')} · ${w.method==='ron'?'론':'쯔모'}</h3><div class="reveal-hand">${[...w.hand].sort((a,b)=>tileOrder(a)-tileOrder(b)).map(t=>tileFace(t)).join('')}${(w.melds||[]).map(m=>`<span class="reveal-meld">${m.tiles.map(t=>tileFace(t)).join('')}</span>`).join('')}</div></section>`).join('')}</div>`;
- },650));
+  for(const v of reveals){
+   if(v.w.method==='tsumo'){
+    const index=v.drawnSlot>=0?v.drawnSlot:v.faces.length-1;
+    if(v.faces[index])v.faces[index].hidden=false;
+    v.mask.textContent=`${v.root} .drawn-back,${v.root} button.drawn{visibility:hidden!important}`;
+   }
+   const rect=v.rect;if(!rect?.width)continue;
+   const flash=document.createElement('div');flash.className='winning-strike';flash.style.left=(rect.left+rect.width/2)+'px';flash.style.top=(rect.top+rect.height/2)+'px';
+   flash.innerHTML='<svg viewBox="0 0 100 220" aria-hidden="true"><path d="M65 0L35 70 60 65 28 130 52 120 45 205"/><path d="M35 70L12 85 22 120M28 130L77 150 90 183"/></svg>';
+   node.append(flash);
+  }
+ },250));
+ scene.timers.push(setTimeout(()=>{
+  if(winIntro!==scene)return;
+  document.querySelectorAll('.declaration-ron,.declaration-tsumo').forEach(el=>el.remove());
+  reveals.forEach(v=>v.reveal());
+ },850));
  scene.timers.push(setTimeout(()=>{
   if(winIntro!==scene)return;
   closeWinIntro();if(roomState?.result?.id===r.id)renderResult(roomState);controls();
- },1650));
+ },1850));
  return true;
 }
 
