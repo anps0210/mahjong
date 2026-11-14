@@ -11,7 +11,9 @@ function closeSettlement(){
  if(roomState&&!roomState.started)show('lobby');
 }
 function openSettlement(room,details){
- const r=room.result;if(!r?.id||!r.standings?.length||settlement?.id===r.id||settlementSeen.has(r.id))return;
+ const r=room.result;
+ if(r?.nextRound&&settlementSeen.has(r.id)){socket.emit('game:settlement-done',{id:r.id});return;}
+ if(!r?.id||!r.standings?.length||settlement?.id===r.id||settlementSeen.has(r.id))return;
  closeSettlement();
  const node=document.createElement('section');node.className='settlement-scene';node.setAttribute('role','dialog');node.setAttribute('aria-modal','true');node.setAttribute('aria-label','대국 결산');
  settlement={id:r.id,node,frame:0,timer:0,stage:'detail'};
@@ -20,9 +22,11 @@ function openSettlement(room,details){
  node.innerHTML=`<header class="settlement-heading"><span>${escapeHtml(r.round||room.roundLabel||'')}</span><h1>${title}</h1><span>${room.playerCount||4}인 마작</span></header><div class="settlement-detail">${details}</div><footer class="settlement-footer"><span>화료 내역을 확인해 주세요</span><button type="button">점수 변동 확인 →</button></footer>`;
  node.querySelector('button').onclick=()=>showSettlementScores(room);
  node.querySelector('button').focus();
+ settlement.timer=setTimeout(()=>{if(settlement?.id===r.id&&settlement.stage==='detail')showSettlementScores(room);},5500*Math.max(1,r.winners?.length||0));
 }
 function showSettlementScores(room){
  const scene=settlement;if(!scene)return;
+ clearTimeout(scene.timer);
  const r=room.result,rows=r.standings,node=scene.node;scene.stage='scores';
  node.innerHTML=`<header class="settlement-heading"><span>${escapeHtml(r.round||'')}</span><h1>점수 정산</h1><span>${r.matchEnded?'대국 종료':r.repeat?'친 연장':'친 교대'}</span></header><div class="settlement-ranking" style="--players:${rows.length}">${rows.map(p=>`<article class="settlement-row ${p.seat===mySeat?'is-me':''}" data-seat="${p.seat}" style="--rank:${p.previousRank-1}"><span class="settlement-rank">${p.previousRank}</span><div class="settlement-name"><strong>${escapeHtml(p.name)}</strong><small>${p.seat===mySeat?'나 · ':''}<span class="rank-movement">${p.previousRank}위 → ${p.rank}위</span></small></div><div class="settlement-points"><b>${p.before.toLocaleString()}</b><span class="${p.delta>=0?'positive':'negative'}">${p.delta>0?'+':''}${p.delta.toLocaleString()}</span></div></article>`).join('')}</div><footer class="settlement-footer"><span>${r.matchEnded?'최종 순위를 확인해 주세요':escapeHtml(r.nextRound||'국 종료')}</span><button type="button">${r.matchEnded?'최종 순위 →':'확인'}</button></footer>`;
  const elements=rows.map(p=>({p,el:node.querySelector(`[data-seat="${p.seat}"]`)}));
@@ -38,12 +42,14 @@ function showSettlementScores(room){
  scene.frame=requestAnimationFrame(tick);
  node.querySelector('button').onclick=()=>{
   cancelAnimationFrame(scene.frame);
-  if(r.matchEnded)showFinalSettlement(room);else finishSettlement(r.id);
+  if(r.matchEnded)showFinalSettlement(room);else awaitNextRound(r.id);
  };
+ if(!r.matchEnded){node.querySelector('button').textContent='자동 진행';node.querySelector('button').disabled=true;}
  node.querySelector('button').focus();
+ scene.timer=setTimeout(()=>{if(settlement!==scene)return;if(r.matchEnded)showFinalSettlement(room);else awaitNextRound(r.id);},3000);
 }
 function showFinalSettlement(room){
- const scene=settlement;if(!scene)return;scene.stage='final';
+ const scene=settlement;if(!scene)return;clearTimeout(scene.timer);cancelAnimationFrame(scene.frame);scene.stage='final';
  const r=room.result,rows=r.standings,winner=rows[0];
  scene.node.innerHTML=`<header class="settlement-heading"><span>${escapeHtml(r.endReason||'남장 종료')}</span><h1>대국 종료</h1><span>FINAL RESULT</span></header><div class="settlement-final"><div class="settlement-champion"><span>1st</span><h2>${escapeHtml(winner.name)}</h2><strong>${winner.score.toLocaleString()}<small> 점</small></strong><p>최종 1위</p></div><ol class="final-standings">${rows.map(p=>`<li class="${p.rank===1?'rank-first':''} ${p.seat===mySeat?'is-me':''}"><b>${p.rank}</b><div><strong>${escapeHtml(p.name)}${p.seat===mySeat?' · 나':''}</strong><small>${p.previousRank===p.rank?'순위 유지':`${p.previousRank}위 → ${p.rank}위`}</small></div><span>${p.score.toLocaleString()}<small>점</small></span></li>`).join('')}</ol></div><footer class="settlement-footer"><span>${r.finalPot?`남은 공탁 ${r.finalPot.toLocaleString()}점은 1위에게 지급되었습니다.`:'대국이 종료되었습니다.'}</span><button type="button">대기실로</button></footer>`;
  scene.node.querySelector('button').onclick=()=>finishSettlement(r.id);scene.node.querySelector('button').focus();
@@ -88,4 +94,23 @@ function startWinIntro(room){
   closeWinIntro();if(roomState?.result?.id===r.id)renderResult(roomState);controls();
  },1650));
  return true;
+}
+
+function awaitNextRound(id){
+ if(!settlement||settlement.id!==id)return;
+ clearTimeout(settlement.timer);cancelAnimationFrame(settlement.frame);settlement.stage='waiting';
+ settlement.node.querySelector('.settlement-footer').innerHTML='<span>다른 참가자의 정산이 끝나면 다음 국이 자동으로 시작됩니다.</span>';
+ socket.emit('game:settlement-done',{id});
+}
+function showNextRound(event){
+ if(!settlement||settlement.id!==event.id)return;
+ settlement.node.innerHTML=`<div class="next-round-title"><small>다음 대국</small><h1>${escapeHtml(event.label)}</h1></div>`;
+}
+function settlementDetails(room){
+ const r=room.result;
+ if(!r.winners?.length)return `<div class="clean-draw"><h2>${r.nagashi?.length?'유국만관':'유국'}</h2><p>${escapeHtml(r.reason||'')}</p><p>텐파이: ${(r.tenpai||[]).map(i=>escapeHtml(r.names?.[i]||room.players[i]?.name||'')).join(' · ')||'없음'}</p></div>`;
+ return r.winners.map(w=>{
+  const limit=w.yakuman?`${w.yakuman>1?w.yakuman+'배 ':''}역만`:w.han>=13?'헤아림 역만':w.han>=11?'삼배만':w.han>=8?'배만':w.han>=6?'하네만':w.han>=5||(w.han===4&&w.fu>=40)||(w.han===3&&w.fu>=70)?'만관':'화료';
+  return `<article class="clean-win winner-result"><div class="win-owner"><strong>${escapeHtml(r.names?.[w.seat]||room.players[w.seat]?.name||'')}</strong><span>${w.method==='ron'?'론':'쯔모'}</span></div><div class="winning-hand">${[...w.hand].sort((a,b)=>tileOrder(a)-tileOrder(b)).map(t=>tileFace(t)).join('')}${w.melds.map(m=>`<span class="result-meld">${m.tiles.map(t=>tileFace(t)).join('')}</span>`).join('')}</div><div class="result-indicators">${(r.doraIndicators||[]).length?`도라 ${(r.doraIndicators||[]).map(t=>tileFace(t)).join('')}`:''}${r.uraIndicators?.length?`<span>우라도라</span>${r.uraIndicators.map(t=>tileFace(t)).join('')}`:''}</div><div class="win-breakdown"><ul class="clean-yaku">${w.yaku.map(y=>`<li><span>${escapeHtml(y.name)}</span><b>${y.yakuman?`${y.yakuman}배 역만`:`${y.han}판`}</b></li>`).join('')}</ul><div class="win-total"><strong>${limit}</strong><p>${w.yakuman?'역만':`${w.fu}부 · ${w.han}판`}</p><b>${w.points.toLocaleString()}<small>점</small></b></div></div></article>`;
+ }).join('');
 }
