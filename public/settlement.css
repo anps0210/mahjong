@@ -8,3 +8,15 @@
 @media(orientation:portrait){.settlement-scene{padding:18px 16px}.settlement-final{grid-template-columns:1fr;gap:12px}.settlement-champion>span{font-size:64px}.settlement-heading span{font-size:10px}.settlement-row{padding:0 12px;gap:12px}.settlement-footer span{max-width:50%}}
 @media(prefers-reduced-motion:reduce){.settlement-row{transition:none}}
 .settlement-scene .settlement-heading,.settlement-scene .settlement-footer{display:flex;margin:0}
+/* Dedicated result layout, replacing the old lobby report. */
+#roundResult{display:none!important}
+.settlement-detail{padding:12px 22px;border:0;background:linear-gradient(115deg,#123b63cc,#0a1a2b88)}
+.settlement-detail .clean-win{padding:0 0 18px;margin-bottom:18px}.win-owner{display:flex;align-items:center;gap:18px;margin-bottom:12px}.win-owner strong{font-size:19px}.win-owner>span{font-style:italic;color:#ffe2a1;font-size:25px;font-weight:900}
+.settlement-detail .winning-hand{flex-wrap:nowrap;gap:3px;align-items:center}.settlement-detail .winning-hand>.tile,.settlement-detail .result-meld>.tile{width:clamp(15px,4vw,44px);min-width:0;flex-shrink:1}.result-indicators{display:flex;align-items:center;gap:5px;margin:10px 0;color:#a9c4dc;font-size:11px}.result-indicators .tile{width:19px}.result-indicators>span{margin-left:12px}
+.win-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:5vw;align-items:center}.settlement-detail .clean-win .clean-yaku{display:grid;gap:0;list-style:none;padding:0;margin:0}.clean-yaku li{display:flex;justify-content:space-between;gap:20px;padding:7px 12px;border-bottom:1px solid #7296b233;font-size:16px}.clean-yaku b{color:#ffe18a}.win-total{text-align:right}.win-total>strong{font-size:clamp(28px,5vw,58px);color:#f8d180;font-style:italic;text-shadow:2px 3px #714928}.win-total p{margin:6px 0;color:#c9d8e8}.win-total>b{font-size:clamp(30px,5vw,54px);color:white;font-variant-numeric:tabular-nums}.win-total small{font-size:16px;margin-left:5px}
+.settlement-detail .clean-draw h2{display:block;font-size:40px;color:#f8d180}.clean-draw{text-align:center;padding:30px}.next-round-title{grid-row:1/-1;align-self:center;justify-self:center;text-align:center;animation:next-round-arrive 1.2s both}.next-round-title small{letter-spacing:.4em;color:#a6cde4}.next-round-title h1{font-size:clamp(30px,7vw,72px);color:#ffe6a6}
+@keyframes next-round-arrive{0%{opacity:0;transform:translateY(20px)}25%,80%{opacity:1;transform:translateY(0)}100%{opacity:0}}
+@media(max-height:500px){.win-owner{margin-bottom:5px}.result-indicators{margin:5px 0}.clean-yaku li{padding:4px 10px;font-size:13px}.win-total>strong{font-size:32px}.win-total>b{font-size:34px}}
+@media(orientation:portrait){.win-breakdown{grid-template-columns:1fr;gap:18px}.win-total{text-align:center}}
+@media(prefers-reduced-motion:reduce){.next-round-title{animation:none}}
+.settlement-detail .win-total{line-height:1.15}.settlement-detail .win-total>b{display:block;line-height:1.1}.settlement-detail .win-total p{margin:4px 0}.settlement-detail .clean-win:last-child{margin-bottom:0;padding-bottom:0}
