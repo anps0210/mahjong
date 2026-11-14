@@ -1,3 +1,4 @@
+const {discardGuide}=require('./discard-guide');
 const rounds=require('./rounds');
 const augments=require('./augments');
 const {isSanma,playerCount,initialScore,allowedTile}=require('./rules');
@@ -170,6 +171,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       hand: player.hand,
       riichi: Boolean(player.riichi),
       riichiDiscards: riichiDiscards(room,seat),
+      discardGuide: player.bot ? [] : discardGuide(room,seat),
       shanten: handShanten(player),
       drawn: player.drawn || null,
       waiting: Boolean(room.pendingCall),

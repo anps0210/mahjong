@@ -22,6 +22,7 @@ let drawnTile = null;
 let publicMelds = [];
 let ownRiichi = false;
 let riichiChoices = [];
+let discardGuides = [];
 let choosingRiichi = false;
 let shantenValue = null;
 let canTsumo = false;
@@ -65,6 +66,7 @@ function controls() {
     b.classList.toggle("selected-tile", Number(b.dataset.i) === selectedHandIndex);
     b.setAttribute("aria-pressed", String(Number(b.dataset.i) === selectedHandIndex));
     b.classList.toggle("riichi-candidate", choosingRiichi && riichiChoices.includes(myHand[Number(b.dataset.i)]));
+    b.classList.toggle("tenpai-candidate", discardGuides.some(g=>g.tile===myHand[Number(b.dataset.i)]));
     b.disabled = !ready || pending || !roomState?.started || roomState.paused;
   });
 }
@@ -99,7 +101,7 @@ function entered(res) {
 }
 
 const show = id => {
-  if(id!=="game") { backgroundMusic.pause(); $("settingsDialog").close(); }
+  if(id!=="game") { backgroundMusic.pause(); if($("settingsDialog").open)$("settingsDialog").close(); }
   document.body.classList.toggle("in-game", id === "game");
   if(id==="game") syncMusic();
   ["home", "lobby", "game"].forEach(x =>
@@ -218,6 +220,8 @@ socket.on("game:private", s => {
   $("selfKanActions").querySelectorAll("button").forEach(b=>b.onclick=()=>request("game:kan",{id:kanChoices[Number(b.dataset.kan)].id},res=>{if(res?.error)$("gameMessage").textContent=res.error;}));
   ownRiichi = s.riichi;
   riichiChoices = s.riichiDiscards || [];
+  discardGuides = s.discardGuide || [];
+  $("discardPreview").classList.add("hidden");
   shantenValue = s.shanten;
   choosingRiichi = false;
   renderShanten();
@@ -285,6 +289,7 @@ function renderHand() {
       const index = Number(b.dataset.i);
       if (selectedHandIndex !== index) {
         selectedHandIndex = index;
+        renderDiscardPreview();
         controls();
         renderDiscards();
         renderTurn();
@@ -294,6 +299,7 @@ function renderHand() {
       discardOrigin = b.getBoundingClientRect();
       const tile = myHand[index];
       selectedHandIndex = null;
+      renderDiscardPreview();
       controls();
       renderDiscards();
       request("game:discard", { tile, riichi: choosingRiichi }, res => {
@@ -304,7 +310,7 @@ function renderHand() {
   controls();
 }
 try { $("sortHand").checked = localStorage.getItem("mahjong.sortHand") !== "false"; } catch {}
-$("sortHand").onchange = () => { try { localStorage.setItem("mahjong.sortHand",String($("sortHand").checked)); } catch {} selectedHandIndex = null; renderHand(); renderDiscards(); renderTurn(); };
+$("sortHand").onchange = () => { try { localStorage.setItem("mahjong.sortHand",String($("sortHand").checked)); } catch {} selectedHandIndex = null; renderDiscardPreview(); renderHand(); renderDiscards(); renderTurn(); };
 // Keep the square table. Sanma uses bottom/right/left and leaves the far side empty.
 function seatLayout(){
  const places=gamePlayerCount===3?['bottom','right','left']:positions;
@@ -665,3 +671,11 @@ $('augmentModal').addEventListener('keydown',e=>{
  if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons.at(-1).focus();}
  else if(!e.shiftKey&&document.activeElement===buttons.at(-1)){e.preventDefault();buttons[0].focus();}
 });
+
+function renderDiscardPreview(){
+ const guide=selectedHandIndex===null?null:discardGuides.find(g=>g.tile===myHand[selectedHandIndex]);
+ const panel=$("discardPreview");
+ panel.classList.toggle('hidden',!guide||currentTurn!==mySeat||waitingCall);
+ if(!guide)return;
+ panel.innerHTML=`<strong>${escapeHtml(guide.tile)} 타패 후 대기${guide.furiten?' · 후리텐 (론 불가)':''}</strong><div class="wait-tiles">${guide.details.map(d=>`<div>${tileFace(d.tile)}<b>${d.remaining}장</b></div>`).join('')}</div>${renderWaitYaku(guide.yaku)}<small>같은 손패를 한 번 더 누르면 버립니다. · 남은 장수는 상대 손패·왕패 포함</small>`;
+}
