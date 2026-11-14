@@ -368,6 +368,17 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
       if(!room||seat<0||!augments.choose(room,seat,id,card))return callback?.({ok:false,error:'선택 가능한 카드를 골라 주세요.'});
       sendAllPrivateStates(room);sendRoom(room);scheduleBot(room);callback?.({ok:true});
     });
+    socket.on('room:leave-finished',callback=>{
+      const room=rooms.get(socket.data.room),player=room?.players.find(p=>p.socketId===socket.id);
+      if(!room||!player||!room.matchEnded||room.started)return callback?.({ok:false,error:'대국 종료 후 나갈 수 있어요.'});
+      socket.leave(room.code);delete socket.data.room;
+      clearTimeout(player.expiryTimer);player.socketId=null;player.connected=false;player.token=null;
+      if(room.players.every(p=>p.bot||!p.connected)){
+        clearTimeout(room.nextTimer);clearTimeout(room.botTimer);clearTimeout(room.cleanupTimer);
+        room.players.forEach(p=>clearTimeout(p.expiryTimer));rooms.delete(room.code);
+      }else{assignHost(room);sendRoom(room);}
+      callback?.({ok:true});
+    });
     socket.on("room:create", ({ name, voice, playerCount: count = 4, mode="standard" } = {}, callback) => {
       if (alreadyJoined(socket, callback)) return;
       if(count!==3&&count!==4)return callback?.({ok:false,error:"3인 또는 4인 모드를 선택해 주세요."});
