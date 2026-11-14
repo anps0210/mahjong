@@ -597,3 +597,25 @@ body.in-game { background:#101b29; }
 #discardPreview { position:absolute; left:50%; bottom:112px; transform:translateX(-50%); z-index:25; width:min(520px,76vw); max-height:48dvh; overflow:auto; padding:12px; border:1px solid #bbdc94; border-radius:10px; background:#13273bf5; color:#f3f7ff; box-shadow:0 6px 24px #0008; font-size:12px; }
 #discardPreview .wait-tiles { margin:6px 0; }
 #discardPreview small { font-size:10px; color:#bfcddd; }
+
+/* Reference-style action controls, just above the right side of the hand. */
+#selfActions,#callPanel { position:absolute; right:17%; bottom:calc(8px + 66px + 14px); z-index:30; display:flex; justify-content:flex-end; align-items:flex-end; gap:12px; max-width:76%; padding:0; margin:0; border:0; background:none; box-shadow:none; }
+#selfActions.hidden,#callPanel.hidden { display:none; }
+#callPanel .call-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:flex-end; gap:12px; }
+#selfKanActions { display:flex; gap:12px; }
+#selfActions .action-button,#callPanel .action-button { position:relative; width:auto; min-width:82px; min-height:38px; padding:2px 16px; border:1px solid #ffffff70; border-radius:3px; transform:skewX(-14deg); background:linear-gradient(170deg,var(--action-light),var(--action-color)); color:#fff; font-size:25px; font-weight:900; font-style:italic; line-height:1.15; text-shadow:-1px -1px 1px #26354e,1px 2px 1px #26354e,0 0 3px #26354e; box-shadow:0 4px 0 var(--action-dark),0 6px 6px #0006,inset 0 1px 1px #fff9; }
+.action-riichi { --action-light:#ffe77a; --action-color:#f6b51b; --action-dark:#a77210; }
+.action-win { --action-light:#ff725c; --action-color:#e52227; --action-dark:#941521; }
+.action-nuki { --action-light:#ff9acc; --action-color:#ee4a96; --action-dark:#9c285e; }
+.action-chi { --action-light:#befb71; --action-color:#75d72c; --action-dark:#41841b; }
+.action-pon { --action-light:#81eaff; --action-color:#20c4ed; --action-dark:#13839b; }
+.action-kan { --action-light:#dab1ff; --action-color:#a66ce3; --action-dark:#644091; }
+.action-pass { --action-light:#b1d2e3; --action-color:#648caa; --action-dark:#3d5c77; }
+#callPanel .call-preview { display:flex; justify-content:center; gap:2px; margin-top:3px; transform:skewX(14deg); }
+#callPanel .call-preview:empty { display:none; }
+#callPanel .call-preview .tile { width:17px; }
+#selfActions #selfKanActions button { font-size:18px; }
+#selfActions .action-button:hover:not(:disabled),#callPanel .action-button:hover:not(:disabled) { filter:brightness(1.15); }
+#selfActions .action-button:focus-visible,#callPanel .action-button:focus-visible { outline:3px solid white; outline-offset:4px; }
+@media (orientation:portrait) { #selfActions,#callPanel { bottom:122px; right:10%; max-width:85%; } }
+@media (min-height:600px) and (orientation:landscape) { #selfActions,#callPanel { bottom:122px; } }
