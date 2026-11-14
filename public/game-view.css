@@ -628,3 +628,11 @@ body.in-game { background:#101b29; }
 .declaration-chii{--ink:#a6ef58}.declaration-pon{--ink:#5adeff}.declaration-kan{--ink:#c899ff}.declaration-nuki{--ink:#ff8fc3}
 @keyframes declaration-pop{0%{opacity:0;transform:translate(-50%,-35%) scale(1.4) rotate(-8deg)}18%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-5deg)}75%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-5deg)}100%{opacity:0;transform:translate(-50%,-65%) scale(1.04) rotate(-5deg)}}
 @media(prefers-reduced-motion:reduce){.declaration-pop{animation-name:declaration-fade}@keyframes declaration-fade{0%,100%{opacity:0}15%,80%{opacity:1}}}
+.declaration-ron,.declaration-tsumo{--ink:#ffdf78}
+.win-intro{position:fixed;inset:0;z-index:44;pointer-events:none}
+.winning-strike{position:absolute;transform:translate(-50%,-50%);width:90px;height:90px;animation:winning-strike .6s both}
+.winning-strike svg{position:absolute;bottom:50%;left:-5px;width:100px;height:220px;overflow:visible;fill:none;stroke:#e9fcff;stroke-width:5;stroke-linejoin:bevel;filter:drop-shadow(0 0 5px #63cbff)}
+.winning-strike svg path+path{stroke-width:2}.strike-tile{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse,#ecfdffbb,transparent 70%)}.strike-tile .tile{width:32px;outline:2px solid #dcfaff;box-shadow:0 0 15px #a7e9ff}
+@keyframes winning-strike{0%{opacity:0}10%,50%{opacity:1}100%{opacity:0}}
+.win-reveal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(850px,90vw);padding:12px;border:1px solid #f3d584;border-radius:10px;background:#10253af5;color:#fff4d4;box-sizing:border-box}.win-reveal section+section{margin-top:12px}.win-reveal h3{margin:0 0 10px;text-align:center;font-size:16px}.reveal-hand{display:flex;justify-content:center;align-items:center;gap:3px}.reveal-hand>.tile,.reveal-meld>.tile{width:clamp(13px,4.5vw,42px);flex-shrink:1;min-width:0}.reveal-meld{display:flex;margin-left:8px;gap:2px}
+@media(prefers-reduced-motion:reduce){.winning-strike{animation:none}.winning-strike svg{filter:none}}
