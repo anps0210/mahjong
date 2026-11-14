@@ -636,3 +636,8 @@ body.in-game { background:#101b29; }
 @keyframes winning-strike{0%{opacity:0}10%,50%{opacity:1}100%{opacity:0}}
 .win-reveal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(850px,90vw);padding:12px;border:1px solid #f3d584;border-radius:10px;background:#10253af5;color:#fff4d4;box-sizing:border-box}.win-reveal section+section{margin-top:12px}.win-reveal h3{margin:0 0 10px;text-align:center;font-size:16px}.reveal-hand{display:flex;justify-content:center;align-items:center;gap:3px}.reveal-hand>.tile,.reveal-meld>.tile{width:clamp(13px,4.5vw,42px);flex-shrink:1;min-width:0}.reveal-meld{display:flex;margin-left:8px;gap:2px}
 @media(prefers-reduced-motion:reduce){.winning-strike{animation:none}.winning-strike svg{filter:none}}
+
+/* Reveal each winner's tiles in their own seat instead of a central panel. */
+.flat-winning-tile{position:fixed;pointer-events:none;transform:translate(-50%,-50%) perspective(400px) rotateX(38deg) rotate(var(--flat-angle));transform-origin:center;}
+.flat-winning-tile[hidden]{display:none}.flat-winning-tile>.tile{display:block;width:100%;height:auto;aspect-ratio:.7;box-shadow:0 3px 0 #bc903b,0 5px 3px #0006}
+.flat-bottom{transform:translate(-50%,-50%) perspective(400px) rotateX(55deg)}
