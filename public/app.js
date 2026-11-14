@@ -166,7 +166,7 @@ socket.on("room:update", room => {
   if (room.code !== roomCode) return;
   roomState = room;
   $("start").classList.toggle("hidden",Boolean(room.matchActive&&!room.started));
-  $("start").textContent=room.matchActive&&!room.started?"다음 국 시작":room.matchEnded?"새 반장전 시작":"게임 시작";
+  $("start").textContent=room.matchActive&&!room.started?"다음 국 시작":room.matchEnded?"새 동풍전 시작":"게임 시작";
   $("roundInfo").textContent=room.roundLabel||"동1국 0본장";
   renderAugments();
   gamePlayerCount=room.playerCount||4;

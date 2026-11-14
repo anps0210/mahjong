@@ -11,14 +11,14 @@ function finish(room){
  if(!repeat&&++next.handNumber>n){next.handNumber=1;next.roundWind++;}
  r.id ||= randomUUID();
  r.round=label(room);r.repeat=repeat;
- const bankrupt=room.players.some(p=>p.score<0),ended=bankrupt||next.roundWind>=2;
+ const bankrupt=room.players.some(p=>p.score<0),ended=bankrupt||next.roundWind>=1;
  if(ended){
   room.matchActive=false;room.matchEnded=true;room.nextRound=null;
   // Award any unclaimed riichi deposits to the leader; initial seat breaks ties.
   const ranked=room.players.map((p,seat)=>({p,seat})).sort((a,b)=>b.p.score-a.p.score||a.p.matchOrder-b.p.matchOrder);
   const award=(room.riichiPot||0)*1000;
   if(award){const top=ranked[0];top.p.score+=award;r.deltas[top.seat]+=award;r.scores[top.seat]+=award;r.finalPot=award;room.riichiPot=0;}
-  r.matchEnded=true;r.endReason=bankrupt?'토비 (0점 미만)':'남장 종료';
+  r.matchEnded=true;r.endReason=bankrupt?'토비 (0점 미만)':'동풍전 종료';
   r.ranking=ranked.map(({p},i)=>({rank:i+1,name:p.name,score:p.score}));
  }else{room.nextRound=next;r.nextRound=label(next);}
  const rows=room.players.map((p,seat)=>({seat,name:p.name,order:p.matchOrder??seat,before:r.scores[seat]-r.deltas[seat],score:r.scores[seat],delta:r.deltas[seat]}));

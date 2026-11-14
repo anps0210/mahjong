@@ -21,4 +21,15 @@ test('two actual rounds preserve players/scores, rotate winds and restore inter-
  await wait(()=>p.every(s=>s.room.started));assert.equal(p[0].room.roundLabel,'동3국 2본장');
  assert.equal((await call(p[0],'game:settlement-done',{id})).ok,false);
 
+ assert.equal((await call(p[0],'room:leave-finished')).ok,false);
+ for(let hand=3;hand<=4;hand++){
+  for(let n=0;n<4;n++){await wait(()=>p.every(s=>!s.state.waiting&&s.state.discards.length===n));const actor=p.find(s=>s.state.mySeat===s.state.turn);assert.equal((await call(actor,'game:discard',{tile:actor.state.drawn})).ok,true);}
+  await wait(()=>p.every(s=>!s.room.started&&s.room.result));
+  if(hand===3){for(const socket of p)await call(socket,'game:settlement-done',{id:p[0].room.result.id});await wait(()=>p.every(s=>s.room.started));}
+ }
+ const final=p[1].room.result;assert.equal(final.matchEnded,true);assert.equal(final.endReason,'동풍전 종료');assert.equal(final.nextRound,undefined);
+ assert.equal((await call(p[0],'room:leave-finished')).ok,true);await wait(()=>!p[1].room.players.find(x=>x.name==='P0').connected);assert.deepEqual(p[1].room.result,final);
+ const fresh=await connect();assert.equal((await call(fresh,'room:resume',sessions[0])).ok,false);
+ assert.equal((await call(p[0],'room:create',{name:'새 방'})).ok,true);
+
 });

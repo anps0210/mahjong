@@ -51,8 +51,8 @@ function showSettlementScores(room){
 function showFinalSettlement(room){
  const scene=settlement;if(!scene)return;clearTimeout(scene.timer);cancelAnimationFrame(scene.frame);scene.stage='final';
  const r=room.result,rows=r.standings,winner=rows[0];
- scene.node.innerHTML=`<header class="settlement-heading"><span>${escapeHtml(r.endReason||'남장 종료')}</span><h1>대국 종료</h1><span>FINAL RESULT</span></header><div class="settlement-final"><div class="settlement-champion"><span>1st</span><h2>${escapeHtml(winner.name)}</h2><strong>${winner.score.toLocaleString()}<small> 점</small></strong><p>최종 1위</p></div><ol class="final-standings">${rows.map(p=>`<li class="${p.rank===1?'rank-first':''} ${p.seat===mySeat?'is-me':''}"><b>${p.rank}</b><div><strong>${escapeHtml(p.name)}${p.seat===mySeat?' · 나':''}</strong><small>${p.previousRank===p.rank?'순위 유지':`${p.previousRank}위 → ${p.rank}위`}</small></div><span>${p.score.toLocaleString()}<small>점</small></span></li>`).join('')}</ol></div><footer class="settlement-footer"><span>${r.finalPot?`남은 공탁 ${r.finalPot.toLocaleString()}점은 1위에게 지급되었습니다.`:'대국이 종료되었습니다.'}</span><button type="button">대기실로</button></footer>`;
- scene.node.querySelector('button').onclick=()=>finishSettlement(r.id);scene.node.querySelector('button').focus();
+ scene.node.innerHTML=`<header class="settlement-heading"><span>${escapeHtml(r.endReason||'동풍전 종료')}</span><h1>대국 종료</h1><span>FINAL RESULT</span></header><div class="settlement-final"><div class="settlement-champion"><span>1st</span><h2>${escapeHtml(winner.name)}</h2><strong>${winner.score.toLocaleString()}<small> 점</small></strong><p>최종 1위</p></div><ol class="final-standings">${rows.map(p=>`<li class="${p.rank===1?'rank-first':''} ${p.seat===mySeat?'is-me':''}"><b>${p.rank}</b><div><strong>${escapeHtml(p.name)}${p.seat===mySeat?' · 나':''}</strong><small>${p.previousRank===p.rank?'순위 유지':`${p.previousRank}위 → ${p.rank}위`}</small></div><span>${p.score.toLocaleString()}<small>점</small></span></li>`).join('')}</ol></div><footer class="settlement-footer"><span>${r.finalPot?`남은 공탁 ${r.finalPot.toLocaleString()}점은 1위에게 지급되었습니다.`:'대국이 종료되었습니다.'}</span><button type="button">메인 화면으로</button></footer>`;
+ scene.node.querySelector('button').onclick=()=>returnToMain(r.id);scene.node.querySelector('button').focus();
 }
 function finishSettlement(id){
  settlementSeen.add(id);try {sessionStorage.setItem('mahjong.settlementSeen',JSON.stringify([...settlementSeen].slice(-30)));}catch{}
@@ -113,4 +113,14 @@ function settlementDetails(room){
   const limit=w.yakuman?`${w.yakuman>1?w.yakuman+'배 ':''}역만`:w.han>=13?'헤아림 역만':w.han>=11?'삼배만':w.han>=8?'배만':w.han>=6?'하네만':w.han>=5||(w.han===4&&w.fu>=40)||(w.han===3&&w.fu>=70)?'만관':'화료';
   return `<article class="clean-win winner-result"><div class="win-owner"><strong>${escapeHtml(r.names?.[w.seat]||room.players[w.seat]?.name||'')}</strong><span>${w.method==='ron'?'론':'쯔모'}</span></div><div class="winning-hand">${[...w.hand].sort((a,b)=>tileOrder(a)-tileOrder(b)).map(t=>tileFace(t)).join('')}${w.melds.map(m=>`<span class="result-meld">${m.tiles.map(t=>tileFace(t)).join('')}</span>`).join('')}</div><div class="result-indicators">${(r.doraIndicators||[]).length?`도라 ${(r.doraIndicators||[]).map(t=>tileFace(t)).join('')}`:''}${r.uraIndicators?.length?`<span>우라도라</span>${r.uraIndicators.map(t=>tileFace(t)).join('')}`:''}</div><div class="win-breakdown"><ul class="clean-yaku">${w.yaku.map(y=>`<li><span>${escapeHtml(y.name)}</span><b>${y.yakuman?`${y.yakuman}배 역만`:`${y.han}판`}</b></li>`).join('')}</ul><div class="win-total"><strong>${limit}</strong><p>${w.yakuman?'역만':`${w.fu}부 · ${w.han}판`}</p><b>${w.points.toLocaleString()}<small>점</small></b></div></div></article>`;
  }).join('');
+}
+
+function returnToMain(id){
+ const button=settlement?.node.querySelector('button');if(button)button.disabled=true;
+ socket.timeout(5000).emit('room:leave-finished',(error,res)=>{
+  if(error||!res?.ok){if(button){button.disabled=false;button.textContent='다시 시도 · 메인 화면으로';}return;}
+  saveSession(null);roomState=null;roomCode=null;myHand=[];mySeat=-1;lastDiscards=[];augmentState={cards:[],draft:null};
+  closeWinIntro();closeSettlement();show('home');renderAugments();controls();
+  $('homeError').textContent='';$('create').focus();
+ });
 }
