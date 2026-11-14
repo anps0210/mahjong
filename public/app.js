@@ -683,3 +683,24 @@ function renderDiscardPreview(){
  if(!guide)return;
  panel.innerHTML=`<strong>${escapeHtml(guide.tile)} 타패 후 대기${guide.furiten?' · 후리텐 (론 불가)':''}</strong><div class="wait-tiles">${guide.details.map(d=>`<div>${tileFace(d.tile)}<b>${d.remaining}장</b></div>`).join('')}</div>${renderWaitYaku(guide.yaku)}<small>같은 손패를 한 번 더 누르면 버립니다. · 남은 장수는 상대 손패·왕패 포함</small>`;
 }
+
+// Visual declarations are independent of imported character voices and audio settings.
+const declarationSeen=new Set();
+socket.on('game:declaration',showDeclaration);
+function showDeclaration(event){
+ const labels={reach:'리치',chii:'치',pon:'퐁',kan:'깡',nuki:'북빼기'};
+ if(!labels[event.action]||!Number.isInteger(event.seat)||!roomState?.started)return;
+ if(declarationSeen.has(event.id))return;
+ declarationSeen.add(event.id);if(declarationSeen.size>100)declarationSeen.delete(declarationSeen.values().next().value);
+ const relative=(event.seat-mySeat+gamePlayerCount)%gamePlayerCount;
+ const position=(gamePlayerCount===3?['bottom','right','left']:['bottom','right','top','left'])[relative];
+ if(!position)return;
+ document.querySelector(`.declaration-pop[data-seat="${event.seat}"]`)?.remove();
+ const node=document.createElement('div');node.className=`declaration-pop declaration-${event.action} declaration-${position}`;node.dataset.seat=event.seat;
+ node.setAttribute('role','status');node.setAttribute('aria-live','polite');
+ const word=document.createElement('strong');word.textContent=labels[event.action];
+ const name=document.createElement('small');name.textContent=event.name||roomState.players[event.seat]?.name||'';
+ node.append(word,name);$('game').append(node);
+ node.addEventListener('animationend',()=>node.remove(),{once:true});
+ setTimeout(()=>node.remove(),1400);
+}
