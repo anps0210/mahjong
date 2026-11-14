@@ -325,7 +325,7 @@ function opponentTileBack(position){
  return '<svg viewBox="0 0 40 52" focusable="false"><path d="M20 2H30L23.78 24.22H13.78Z" fill="#fffef7" stroke="#c8d0cf" stroke-width=".6"/><path d="M13.78 24.22H23.78L33.78 50H23.78Z" fill="#dce8ed" stroke="#b4c5cc" stroke-width=".6"/><path d="M30 2L23.78 24.22L33.78 50L40 27.78Z" fill="#f0aa36" stroke="#a7772f" stroke-width=".6"/><path d="M29.6 3.5L24.2 23" stroke="#ffce64" stroke-width="1"/></svg>';
 }
 function renderOpponentHands(){
- const markup=roomState?.started?seatLayout().filter(({seat})=>seat!==mySeat).map(({seat,position})=>{
+ const markup=(roomState?.started||roomState?.result?.type==='win')?seatLayout().filter(({seat})=>seat!==mySeat).map(({seat,position})=>{
   const p=roomState.players[seat];
   if(!p)return '';
   const count=Math.max(0,Math.min(14,p.handCount||0));
