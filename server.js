@@ -25,6 +25,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   app.use(express.static(path.join(__dirname, "public")));
 
   function emitVoice(room,seat,action){
+    if(["reach","chii","pon","kan","nuki"].includes(action))io.to(room.code).emit("game:declaration",{id:randomUUID(),seat,action,name:room.players[seat].name});
     io.to(room.code).emit("game:voice",{id:randomUUID(),seat,voice:room.players[seat].voice||"milk",action});
   }
   function finishWins(room,seats,context){
@@ -308,6 +309,7 @@ function createGameServer({ reconnectGraceMs = 5 * 60 * 1000, botDelayMs = 900, 
   }
 
   function extractNorth(room,seat){
+    emitVoice(room,seat,"nuki");
     const offers={};
     room.players.forEach((p,i)=>{
       // Only kokushi can rob an extracted North, with no chankan bonus.
