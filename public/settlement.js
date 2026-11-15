@@ -22,7 +22,8 @@ function openSettlement(room,details){
  node.innerHTML=`<header class="settlement-heading"><span>${escapeHtml(r.round||room.roundLabel||'')}</span><h1>${title}</h1><span>${room.playerCount||4}인 마작</span></header><div class="settlement-detail">${details}</div><footer class="settlement-footer"><span>화료 내역을 확인해 주세요</span><button type="button">점수 변동 확인 →</button></footer>`;
  node.querySelector('button').onclick=()=>showSettlementScores(room);
  node.querySelector('button').focus();
- settlement.timer=setTimeout(()=>{if(settlement?.id===r.id&&settlement.stage==='detail')showSettlementScores(room);},5500*Math.max(1,r.winners?.length||0));
+ const revealDuration=animateResultBreakdown(node);
+ settlement.timer=setTimeout(()=>{if(settlement?.id===r.id&&settlement.stage==='detail')showSettlementScores(room);},Math.max(5500,revealDuration+3000));
 }
 function showSettlementScores(room){
  const scene=settlement;if(!scene)return;
@@ -155,4 +156,21 @@ function returnToMain(id){
   closeWinIntro();closeSettlement();show('home');renderAugments();controls();
   $('homeError').textContent='';$('create').focus();
  });
+}
+
+function animateResultBreakdown(node){
+ if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return 0;
+ let delay=350;
+ const reveal=(element,at,emphasis=false)=>{
+  if(!element)return;
+  element.classList.add('result-reveal');if(emphasis)element.classList.add('result-reveal-emphasis');
+  element.style.setProperty('--reveal-delay',`${at}ms`);
+ };
+ for(const winner of node.querySelectorAll('.clean-win')){
+  for(const yaku of winner.querySelectorAll('.clean-yaku li')){reveal(yaku,delay);delay+=550;}
+  reveal(winner.querySelector('.win-total p'),delay);delay+=350;
+  reveal(winner.querySelector('.win-total>b'),delay,true);delay+=450;
+  reveal(winner.querySelector('.win-total>strong'),delay,true);delay+=700;
+ }
+ return delay;
 }
