@@ -641,3 +641,5 @@ body.in-game { background:#101b29; }
 .flat-winning-tile{position:fixed;pointer-events:none;transform:translate(-50%,-50%) perspective(400px) rotateX(38deg) rotate(var(--flat-angle));transform-origin:center;}
 .flat-winning-tile[hidden]{display:none}.flat-winning-tile>.tile{display:block;width:100%;height:auto;aspect-ratio:.7;box-shadow:0 3px 0 #bc903b,0 5px 3px #0006}
 .flat-bottom{transform:translate(-50%,-50%) perspective(400px) rotateX(55deg)}
+
+.declaration-ron,.declaration-tsumo{animation-duration:2s}

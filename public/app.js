@@ -702,7 +702,7 @@ function showDeclaration(event){
  const name=document.createElement('small');name.textContent=event.name||roomState.players[event.seat]?.name||'';
  node.append(word,name);$('game').append(node);
  node.addEventListener('animationend',()=>node.remove(),{once:true});
- setTimeout(()=>node.remove(),1400);
+ setTimeout(()=>node.remove(),['ron','tsumo'].includes(event.action)?2050:1400);
 }
 
 socket.on('game:next-round',showNextRound);

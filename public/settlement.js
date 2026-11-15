@@ -103,6 +103,7 @@ function startWinIntro(room){
  // Declaration first, then strike the actual discarded/drawn tile. No duplicate floating tile.
  scene.timers.push(setTimeout(()=>{
   if(winIntro!==scene)return;
+  document.querySelectorAll(".declaration-ron,.declaration-tsumo").forEach(el=>el.remove());
   for(const v of reveals){
    if(v.w.method==='tsumo'){
     const index=v.drawnSlot>=0?v.drawnSlot:v.faces.length-1;
@@ -114,16 +115,16 @@ function startWinIntro(room){
    flash.innerHTML='<svg viewBox="0 0 100 220" aria-hidden="true"><path d="M65 0L35 70 60 65 28 130 52 120 45 205"/><path d="M35 70L12 85 22 120M28 130L77 150 90 183"/></svg>';
    node.append(flash);
   }
- },1500));
+ },2000));
  scene.timers.push(setTimeout(()=>{
   if(winIntro!==scene)return;
   document.querySelectorAll('.declaration-ron,.declaration-tsumo').forEach(el=>el.remove());
   reveals.forEach(v=>v.reveal());
- },2100));
+ },2600));
  scene.timers.push(setTimeout(()=>{
   if(winIntro!==scene)return;
   closeWinIntro();if(roomState?.result?.id===r.id)renderResult(roomState);controls();
- },3100));
+ },4600));
  return true;
 }
 

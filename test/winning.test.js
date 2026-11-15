@@ -6,7 +6,7 @@ const {TILES}=require('../bot');
 const kongs=require('../kongs');
 function tiles(s){return [...s.matchAll(/([mpsz])(\d+)/g)].flatMap(([,s,ns])=>[...ns].map(n=>TILES[s==='z'?26+Number(n):'mps'.indexOf(s)*9+Number(n)-1]));}
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
-async function until(fn){for(let i=0;i<300;i++){if(fn())return;await pause(10)}throw Error('state timeout');}
+async function until(fn,attempts=300){for(let i=0;i<attempts;i++){if(fn())return;await pause(10)}throw Error('state timeout');}
 const call=(s,e,d)=>new Promise((resolve,reject)=>{const cb=(err,v)=>err?reject(err):resolve(v);d===undefined?s.timeout(3000).emit(e,cb):s.timeout(3000).emit(e,d,cb)});
 function wall(hands,draw,rinshan){
  const stock=TILES.flatMap(t=>Array(4).fill(t));
@@ -41,7 +41,7 @@ test('real tsumo request settles once, rejects wrong seat, restores result on re
  const {JSDOM}=require('jsdom');fresh.disconnect();
  const page=await JSDOM.fromURL(url,{resources:'usable',runScripts:'dangerously',beforeParse(w){w.sessionStorage.setItem('mahjong.session.v1',JSON.stringify(sessions[0]));}});
  t.after(()=>{page.window.eval('socket.disconnect()');page.window.close()});
- await until(()=>page.window.document.querySelector('#roundResult').textContent.includes('천화'));
+ await until(()=>page.window.document.querySelector('#roundResult').textContent.includes('천화'),600);
  assert.match(page.window.document.querySelector('#roundResult').textContent,/쯔모/);
 });
 test('ron beats an already chosen pon, closes hand and rejects stale win response',async t=>{
