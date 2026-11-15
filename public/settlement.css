@@ -20,3 +20,10 @@
 @media(orientation:portrait){.win-breakdown{grid-template-columns:1fr;gap:18px}.win-total{text-align:center}}
 @media(prefers-reduced-motion:reduce){.next-round-title{animation:none}}
 .settlement-detail .win-total{line-height:1.15}.settlement-detail .win-total>b{display:block;line-height:1.1}.settlement-detail .win-total p{margin:4px 0}.settlement-detail .clean-win:last-child{margin-bottom:0;padding-bottom:0}
+
+/* Reveal each yaku, then han/fu, points and the limit name. */
+.settlement-scene .result-reveal{animation:result-line-in .3s ease-out var(--reveal-delay) both}
+.settlement-scene .result-reveal-emphasis{animation-name:result-total-in;animation-duration:.4s}
+@keyframes result-line-in{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes result-total-in{from{opacity:0;transform:translateY(9px) scale(.92)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.settlement-scene .result-reveal{animation:none}}
